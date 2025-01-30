@@ -29,12 +29,13 @@ from pydrive.drive import GoogleDrive
 def autenticar_drive():
     gauth = GoogleAuth()
     
-    # Intenta cargar las credenciales almacenadas
-    gauth.LoadCredentialsFile("mycreds.txt")
+
+
 
     if gauth.credentials is None:
         # Autenticación si no hay credenciales guardadas
         gauth.LocalWebserverAuth()  # Esto abre un navegador para autorizar la app
+        gauth.SaveCredentialsFile("mycreds.txt") 
     elif not gauth.credentials or gauth.access_token_expired:
         if gauth.access_token_expired:
             print("Access token expired. Refreshing...")
