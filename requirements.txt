@@ -1,0 +1,16 @@
+streamlit
+pandas
+datetime
+pytz
+itables
+matplotlib
+plotly
+numpy
+pivottablejs
+tabulate
+gdown
+pydrive
+requests
+openpyxl
+seaborn
+plotly
