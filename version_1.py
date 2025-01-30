@@ -26,7 +26,6 @@ today_string = fecha_peru_hoy().strftime('%y%m%d')
 from pydrive.auth import GoogleAuth
 from pydrive.drive import GoogleDrive
 
-    return drive
 def autenticar_drive():
     gauth = GoogleAuth()
     
