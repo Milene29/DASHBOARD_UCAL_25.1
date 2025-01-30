@@ -6,7 +6,6 @@ from itables.streamlit import interactive_table
 from pydrive.auth import GoogleAuth
 from pydrive.drive import GoogleDrive
 import io
-import os
 import requests
 from pydrive.auth import GoogleAuth
 from pydrive.drive import GoogleDrive
@@ -16,7 +15,6 @@ import plotly.express as px
 
 # Set page config
 st.set_page_config(page_title="Streamlit Dashboard", layout="wide")
-
 # Define function to get today's date in Lima timezone
 def fecha_peru_hoy():
     lima_timezone = pytz.timezone('America/Lima')
@@ -51,34 +49,33 @@ def autenticar_drive():
     # Retorna el objeto GoogleDrive con las credenciales autorizadas
     drive = GoogleDrive(gauth)
     return drive
-def obtener_archivos_drive(folder_id, carpeta_descarga="descargas"):
+
+# Función para obtener archivos de una carpeta de Google Drive y descargarlos
+def obtener_archivos_drive(folder_id):
     drive = autenticar_drive()
-    
-    # Crear carpeta de descarga si no existe
-    if not os.path.exists(carpeta_descarga):
-        os.makedirs(carpeta_descarga)
-    
     file_list = drive.ListFile({'q': f"'{folder_id}' in parents"}).GetList()
-    archivos_vistos = set(os.listdir(carpeta_descarga))  # Archivos ya descargados
     archivos_descargados = []
-    
+    archivos_vistos = set()  # Evitar duplicados
+
     for file in file_list:
         file_name = file['title']
         file_id = file['id']
         
-        # Verificar si es un archivo válido y no ha sido descargado antes
+        # Verificar si es un archivo válido (CSV o Excel)
         if file_name.endswith(('.csv', '.xlsx')) and file_name not in archivos_vistos:
-            print(f"Descargando archivo: {file_name}")
-            file_path = os.path.join(carpeta_descarga, file_name)
+            print(f"Cargando archivo: {file_name}")
+            file_url = f"https://drive.google.com/uc?export=download&id={file_id}"
             
             try:
-                file.GetContentFile(file_path)  # Descarga el archivo directamente
-                archivos_descargados.append(file_path)
-                archivos_vistos.add(file_name)  # Agregar a archivos ya descargados
+                file_content = requests.get(file_url).content
+                archivos_descargados.append((file_name, file_content))
+                archivos_vistos.add(file_name)
             except Exception as e:
                 print(f"Error al descargar {file_name}: {e}")
-    
+
     return archivos_descargados
+# Llamada a la función con el folder ID de tu carpeta de Google Drive
+
 
 # Función para cargar los datos
 @st.cache_data
@@ -153,9 +150,6 @@ else:
             data2 = data2
         else:
             data2 = data3
-
-    
-
 # Helper function to format numbers with commas
 def format_with_commas(number):
     return f"{number:,}"
@@ -195,7 +189,6 @@ data2['MUNDO_CALCULADO'] = data2['ult_programa_interes'].apply(clasificar_mundo)
 df['flg_traslados'] = df['flg_traslados'].replace({0: 'Nuevo', 1: 'Traslado'})
 
 df['flg_convocatoria'] = df['flg_convocatoria'].replace({0: 'No Convo', 1: 'Convo'})
-
 
 
 with st.sidebar:
@@ -242,13 +235,7 @@ if mundo_seleccionado == "SIN CARRERA":
     filtered_df_2 = data2[
         (data2['MUNDO_CALCULADO'] == "SIN CARRERA") 
     ]
-    
-
 # Mostrar resultados filtrados
-
-
-
-
 with st.sidebar:
     try:
             # Asegurarse de que la columna sea numérica
@@ -272,10 +259,7 @@ with st.sidebar:
                 (filtered_df['dias_sin_contacto'] <= rango_dias[1])
             ]
     except ValueError as e:
-                st.error(f"Error al procesar la columna 'dias_sin_contacto': {e}")
-    
-            
-    
+                st.error(f"Error al procesar la columna 'dias_sin_contacto': {e}")   
     tipo_ingreso =["Todos"] + filtered_df['flg_traslados'].unique().tolist()
     tipo_select= st.selectbox("Tipo Ingreso", options=tipo_ingreso)
     if tipo_select != "Todos":
@@ -313,14 +297,11 @@ with st.sidebar:
      
 
     Convo =["Todos"] + filtered_df['flg_convocatoria'].unique().tolist()
-    
     Convo_seleccionado= st.selectbox("Convo", options=Convo)
-    Convo2 =["Todos"] + filtered_df_2['flg_convocatoria'].unique().tolist()
-    Convo_seleccionado2= st.selectbox("Convo", options=Convo2)
     if Convo_seleccionado != "Todos":
         # Filtrar por el canal seleccionado
      filtered_df = filtered_df[filtered_df['flg_convocatoria'] == Convo_seleccionado]
-     filtered_df_2 = filtered_df_2[filtered_df_2['flg_convocatoria'] == Convo_seleccionado2]
+     filtered_df_2 = filtered_df_2[filtered_df_2['flg_convocatoria'] == Convo_seleccionado]
      
 
 
@@ -456,35 +437,6 @@ else:
 
     # Definir los colores en función del valor de porcentaje
 
-def highlight_values(row):
-    styles = []
-    for col in ['Lead a Contacto', 'Contacto a VALP']:
-        if isinstance(row[col], str):  # Convertir el porcentaje en número si es necesario
-            value = float(row[col].strip('%'))
-        else:
-            value = row[col]
-        
-        if value > 10:
-            styles.append('color: green;')
-        elif 5 <= value < 10:
-            styles.append('color: orange;')
-        else:
-            styles.append('color: red;')
-    return styles + [''] * (len(row) - len(styles))  # Dejar sin estilos el resto de las columnas
-
-def normalizar(df, rows_to_keep_as_float):
-    """
-    Convierte los valores de las filas que NO están en `rows_to_keep_as_float` a enteros.
-    Mantiene los valores de las filas especificadas sin cambios.
-    """
-    for row_name in df.index:
-        if row_name not in rows_to_keep_as_float:
-            # Convertir todos los valores de la fila a enteros si son números válidos
-            df.loc[row_name] = df.loc[row_name].apply(
-                lambda x: int(x) if isinstance(x, (float, int)) and pd.notnull(x) else x
-            )
-    return df
-
 def format_as_percentage(df, rows_to_format):
     """
     Formatea solo las filas especificadas como porcentaje con 2 decimales,
@@ -538,9 +490,9 @@ if not Leads_valp.empty:
         for value in row:
             if isinstance(value, str) and '%' in value:  # Si el valor es un porcentaje
                 num = float(value.strip('%'))
-                if num > 50:
+                if num > 10:
                     styles.append('color: green;')
-                elif 35 <= num < 50:
+                elif 5 <= num < 10:
                     styles.append('color: orange;')
                 else:
                     styles.append('color: red;')
@@ -788,69 +740,38 @@ with col2:
 
 
 
-col1,col2=st.columns(2)
-with col1:
 
-    # Aplicar prefiltro: Excluir "Sin contacto" en la columna "prim_tipif_no_TI"
-    filtered_df_mad = filtered_df[filtered_df["prim_tipif_no_TI"] != "Sin contacto"].copy()
+# Aplicar prefiltro: Excluir "Sin contacto" en la columna "prim_tipif_no_TI"
+filtered_df_mad = filtered_df[filtered_df["prim_tipif_no_TI"] != "Sin contacto"].copy()
 
-    # Eliminar filas sin fecha de primer toque o fecha de pago
-    filtered_df_mad = filtered_df_mad.dropna(subset=["prim_tipif_no_TI2", "fecha_pagante_crm"])
+# Eliminar filas sin fecha de primer toque o fecha de pago
+filtered_df_mad = filtered_df_mad.dropna(subset=["prim_tipif_no_TI2", "fecha_pagante_crm"])
 
-    # Convertir columnas de fecha a tipo datetime
-    filtered_df_mad["prim_tipif_no_TI2"] = pd.to_datetime(filtered_df_mad["prim_tipif_no_TI2"])
-    filtered_df_mad["fecha_pagante_crm"] = pd.to_datetime(filtered_df_mad["fecha_pagante_crm"])
+# Convertir columnas de fecha a tipo datetime
+filtered_df_mad["prim_tipif_no_TI2"] = pd.to_datetime(filtered_df_mad["prim_tipif_no_TI2"])
+filtered_df_mad["fecha_pagante_crm"] = pd.to_datetime(filtered_df_mad["fecha_pagante_crm"])
 
-    # Calcular maduración (días entre primer toque y pago)
-    filtered_df_mad["maduracion_dias"] = (filtered_df_mad["fecha_pagante_crm"] - filtered_df_mad["prim_tipif_no_TI2"]).dt.days
+# Calcular maduración (días entre primer toque y pago)
+filtered_df_mad["maduracion_dias"] = (filtered_df_mad["fecha_pagante_crm"] - filtered_df_mad["prim_tipif_no_TI2"]).dt.days
 
-    # Eliminar valores atípicos usando el rango intercuartil (IQR)
-    Q1 = filtered_df_mad["maduracion_dias"].quantile(0.25)
-    Q3 = filtered_df_mad["maduracion_dias"].quantile(0.75)
-    IQR = Q3 - Q1
-    limite_inferior = Q1 - 1.5 * IQR
-    limite_superior = Q3 + 1.5 * IQR
+# Eliminar valores atípicos usando el rango intercuartil (IQR)
+Q1 = filtered_df_mad["maduracion_dias"].quantile(0.25)
+Q3 = filtered_df_mad["maduracion_dias"].quantile(0.75)
+IQR = Q3 - Q1
+limite_inferior = Q1 - 1.5 * IQR
+limite_superior = Q3 + 1.5 * IQR
 
-    # Filtrar datos sin outliers
-    filtered_df_mad = filtered_df_mad[(filtered_df_mad["maduracion_dias"] >= limite_inferior) & 
-                                    (filtered_df_mad["maduracion_dias"] <= limite_superior)]
+# Filtrar datos sin outliers
+filtered_df_mad = filtered_df_mad[(filtered_df_mad["maduracion_dias"] >= limite_inferior) & 
+                                   (filtered_df_mad["maduracion_dias"] <= limite_superior)]
 
-    # Crear Boxplot con Plotly
-    fig = px.box(filtered_df_mad, y="maduracion_dias", title="Boxplot de Maduración (Días desde 1 Toque a Pago)",
-                labels={"maduracion_dias": "Días de Maduración"},
-                template="plotly_white", width=400, height=450)
+# Crear Boxplot con Plotly
+fig = px.box(filtered_df_mad, y="maduracion_dias", title="Boxplot de Maduración (Días desde 1 Toque a Pago)",
+             labels={"maduracion_dias": "Días de Maduración"},
+             template="plotly_white", width=400, height=450)
 
-    # Mostrar en Streamlit
-    st.plotly_chart(fig)
-
-
-
-
-with col2:
-
-    # Aplicar prefiltro: Excluir "Sin contacto" en la columna "prim_tipif_no_TI"
-    filtered_df_mad = filtered_df[filtered_df["prim_tipif_no_TI"] != "Sin contacto"].copy()
-
-    # Convertir a numérico para evitar errores
-    filtered_df_mad["cantidad_tipificaciones"] = pd.to_numeric(filtered_df_mad["cantidad_tipificaciones"], errors="coerce")
-    # Eliminar valores nulos después de conversión
-    filtered_df_mad = filtered_df_mad.dropna(subset=["cantidad_tipificaciones"])
-    # Calcular IQR para eliminar valores atípicos
-    Q1 = filtered_df_mad["cantidad_tipificaciones"].quantile(0.25)
-    Q3 = filtered_df_mad["cantidad_tipificaciones"].quantile(0.75)
-    IQR = Q3 - Q1
-    limite_inferior = Q1 - 1.5 * IQR
-    limite_superior = Q3 + 1.5 * IQR
-
-    filtered_df_mad = filtered_df_mad[(filtered_df_mad["cantidad_tipificaciones"] >= limite_inferior) & 
-                                    (filtered_df_mad["cantidad_tipificaciones"] <= limite_superior)]
-    fig = px.box(filtered_df_mad, y="cantidad_tipificaciones", title="Boxplot de Número de Toques",
-                labels={"cantidad_tipificaciones": "Cantidad de Toques"},
-                template="plotly_white", width=400, height=450)
-    # Mostrar en Streamlit
-    st.plotly_chart(fig)
-
-
+# Mostrar en Streamlit
+st.plotly_chart(fig)
 
 # Crear DataFrame
 st.write("Matriz de Toques / Días de Vida")
