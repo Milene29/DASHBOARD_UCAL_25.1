@@ -28,6 +28,8 @@ from pydrive.drive import GoogleDrive
 
 def autenticar_drive():
     gauth = GoogleAuth()
+    # Intenta cargar las credenciales almacenadas
+    gauth.LoadCredentialsFile("mycreds.txt")
     if gauth.credentials is None:
         # Autenticación si no hay credenciales guardadas
         gauth.LocalWebserverAuth()  # Esto abre un navegador para autorizar la app
