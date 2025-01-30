@@ -189,6 +189,7 @@ data2['MUNDO_CALCULADO'] = data2['ult_programa_interes'].apply(clasificar_mundo)
 df['flg_traslados'] = df['flg_traslados'].replace({0: 'Nuevo', 1: 'Traslado'})
 
 df['flg_convocatoria'] = df['flg_convocatoria'].replace({0: 'No Convo', 1: 'Convo'})
+data2['flg_convocatoria'] = data2['flg_convocatoria'].replace({0: 'No Convo', 1: 'Convo'})
 
 
 with st.sidebar:
@@ -741,37 +742,68 @@ with col2:
 
 
 
-# Aplicar prefiltro: Excluir "Sin contacto" en la columna "prim_tipif_no_TI"
-filtered_df_mad = filtered_df[filtered_df["prim_tipif_no_TI"] != "Sin contacto"].copy()
+col1,col2=st.columns(2)
+with col1:
 
-# Eliminar filas sin fecha de primer toque o fecha de pago
-filtered_df_mad = filtered_df_mad.dropna(subset=["prim_tipif_no_TI2", "fecha_pagante_crm"])
+    # Aplicar prefiltro: Excluir "Sin contacto" en la columna "prim_tipif_no_TI"
+    filtered_df_mad = filtered_df[filtered_df["prim_tipif_no_TI"] != "Sin contacto"].copy()
 
-# Convertir columnas de fecha a tipo datetime
-filtered_df_mad["prim_tipif_no_TI2"] = pd.to_datetime(filtered_df_mad["prim_tipif_no_TI2"])
-filtered_df_mad["fecha_pagante_crm"] = pd.to_datetime(filtered_df_mad["fecha_pagante_crm"])
+    # Eliminar filas sin fecha de primer toque o fecha de pago
+    filtered_df_mad = filtered_df_mad.dropna(subset=["prim_tipif_no_TI2", "fecha_pagante_crm"])
 
-# Calcular maduración (días entre primer toque y pago)
-filtered_df_mad["maduracion_dias"] = (filtered_df_mad["fecha_pagante_crm"] - filtered_df_mad["prim_tipif_no_TI2"]).dt.days
+    # Convertir columnas de fecha a tipo datetime
+    filtered_df_mad["prim_tipif_no_TI2"] = pd.to_datetime(filtered_df_mad["prim_tipif_no_TI2"])
+    filtered_df_mad["fecha_pagante_crm"] = pd.to_datetime(filtered_df_mad["fecha_pagante_crm"])
 
-# Eliminar valores atípicos usando el rango intercuartil (IQR)
-Q1 = filtered_df_mad["maduracion_dias"].quantile(0.25)
-Q3 = filtered_df_mad["maduracion_dias"].quantile(0.75)
-IQR = Q3 - Q1
-limite_inferior = Q1 - 1.5 * IQR
-limite_superior = Q3 + 1.5 * IQR
+    # Calcular maduración (días entre primer toque y pago)
+    filtered_df_mad["maduracion_dias"] = (filtered_df_mad["fecha_pagante_crm"] - filtered_df_mad["prim_tipif_no_TI2"]).dt.days
 
-# Filtrar datos sin outliers
-filtered_df_mad = filtered_df_mad[(filtered_df_mad["maduracion_dias"] >= limite_inferior) & 
-                                   (filtered_df_mad["maduracion_dias"] <= limite_superior)]
+    # Eliminar valores atípicos usando el rango intercuartil (IQR)
+    Q1 = filtered_df_mad["maduracion_dias"].quantile(0.25)
+    Q3 = filtered_df_mad["maduracion_dias"].quantile(0.75)
+    IQR = Q3 - Q1
+    limite_inferior = Q1 - 1.5 * IQR
+    limite_superior = Q3 + 1.5 * IQR
 
-# Crear Boxplot con Plotly
-fig = px.box(filtered_df_mad, y="maduracion_dias", title="Boxplot de Maduración (Días desde 1 Toque a Pago)",
-             labels={"maduracion_dias": "Días de Maduración"},
-             template="plotly_white", width=400, height=450)
+    # Filtrar datos sin outliers
+    filtered_df_mad = filtered_df_mad[(filtered_df_mad["maduracion_dias"] >= limite_inferior) & 
+                                    (filtered_df_mad["maduracion_dias"] <= limite_superior)]
 
-# Mostrar en Streamlit
-st.plotly_chart(fig)
+    # Crear Boxplot con Plotly
+    fig = px.box(filtered_df_mad, y="maduracion_dias", title="Boxplot de Maduración (Días desde 1 Toque a Pago)",
+                labels={"maduracion_dias": "Días de Maduración"},
+                template="plotly_white", width=400, height=450)
+
+    # Mostrar en Streamlit
+    st.plotly_chart(fig)
+
+
+
+
+with col2:
+
+    # Aplicar prefiltro: Excluir "Sin contacto" en la columna "prim_tipif_no_TI"
+    filtered_df_mad = filtered_df[filtered_df["prim_tipif_no_TI"] != "Sin contacto"].copy()
+
+    # Convertir a numérico para evitar errores
+    filtered_df_mad["cantidad_tipificaciones"] = pd.to_numeric(filtered_df_mad["cantidad_tipificaciones"], errors="coerce")
+    # Eliminar valores nulos después de conversión
+    filtered_df_mad = filtered_df_mad.dropna(subset=["cantidad_tipificaciones"])
+    # Calcular IQR para eliminar valores atípicos
+    Q1 = filtered_df_mad["cantidad_tipificaciones"].quantile(0.25)
+    Q3 = filtered_df_mad["cantidad_tipificaciones"].quantile(0.75)
+    IQR = Q3 - Q1
+    limite_inferior = Q1 - 1.5 * IQR
+    limite_superior = Q3 + 1.5 * IQR
+
+    filtered_df_mad = filtered_df_mad[(filtered_df_mad["cantidad_tipificaciones"] >= limite_inferior) & 
+                                    (filtered_df_mad["cantidad_tipificaciones"] <= limite_superior)]
+    fig = px.box(filtered_df_mad, y="cantidad_tipificaciones", title="Boxplot de Número de Toques",
+                labels={"cantidad_tipificaciones": "Cantidad de Toques"},
+                template="plotly_white", width=400, height=450)
+    # Mostrar en Streamlit
+    st.plotly_chart(fig)
+
 
 # Crear DataFrame
 st.write("Matriz de Toques / Días de Vida")
