@@ -26,7 +26,7 @@ today_string = fecha_peru_hoy().strftime('%y%m%d')
 from pydrive.auth import GoogleAuth
 from pydrive.drive import GoogleDrive
 
-# Función para autenticar con Google Drive
+    return drive
 def autenticar_drive():
     gauth = GoogleAuth()
     
@@ -49,7 +49,6 @@ def autenticar_drive():
     # Retorna el objeto GoogleDrive con las credenciales autorizadas
     drive = GoogleDrive(gauth)
     return drive
-
 # Función para obtener archivos de una carpeta de Google Drive y descargarlos
 def obtener_archivos_drive(folder_id):
     drive = autenticar_drive()
