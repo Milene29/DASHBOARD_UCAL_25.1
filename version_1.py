@@ -28,10 +28,6 @@ from pydrive.drive import GoogleDrive
 
 def autenticar_drive():
     gauth = GoogleAuth()
-    
-
-
-
     if gauth.credentials is None:
         # Autenticación si no hay credenciales guardadas
         gauth.LocalWebserverAuth()  # Esto abre un navegador para autorizar la app
@@ -190,7 +186,6 @@ df['flg_traslados'] = df['flg_traslados'].replace({0: 'Nuevo', 1: 'Traslado'})
 df['flg_convocatoria'] = df['flg_convocatoria'].replace({0: 'No Convo', 1: 'Convo'})
 data2['flg_convocatoria'] = data2['flg_convocatoria'].replace({0: 'No Convo', 1: 'Convo'})
 
-
 with st.sidebar:
     st.header("Filtros")
     
@@ -266,8 +261,8 @@ with st.sidebar:
         # Filtrar por el canal seleccionado
      filtered_df = filtered_df[filtered_df['flg_traslados'] == tipo_select]
      # Filtrar los IDs con flg_traslados = 1
-     traslados_ids = filtered_df.loc[filtered_df['flg_traslados'] == tipo_select, 'id_prometeo']
-    
+     traslados_ids = filtered_df[filtered_df['flg_traslados'] == tipo_select, 'id_prometeo']
+     print(f"Datos de data3 cargados. Columnas: {traslados_ids.columns.tolist()}")
     # Cruzar los IDs con filtered_df_2
      filtered_df_2 = filtered_df_2[filtered_df_2['id_prometeo'].isin(traslados_ids)]
     
