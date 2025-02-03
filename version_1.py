@@ -38,8 +38,8 @@ def autenticar_drive():
         if gauth.access_token_expired:
             print("Access token expired. Refreshing...")
         # Solicitar acceso offline para obtener un refresh token
-        gauth.LocalWebserverAuth()  # No es necesario el parámetro 'access_type'
-        gauth.SaveCredentialsFile("mycreds.txt")  # Guardar las credenciales para la próxima vez
+            gauth.LocalWebserverAuth()  # No es necesario el parámetro 'access_type'
+            gauth.SaveCredentialsFile("mycreds.txt")  # Guardar las credenciales para la próxima vez
     else:
         # Autorizar con las credenciales guardadas
         gauth.Authorize()
@@ -47,6 +47,7 @@ def autenticar_drive():
     # Retorna el objeto GoogleDrive con las credenciales autorizadas
     drive = GoogleDrive(gauth)
     return drive
+
 # Función para obtener archivos de una carpeta de Google Drive y descargarlos
 def obtener_archivos_drive(folder_id):
     drive = autenticar_drive()
