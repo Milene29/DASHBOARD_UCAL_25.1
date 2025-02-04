@@ -14,3 +14,4 @@ requests
 openpyxl
 seaborn
 plotly
+st-aggrid
