@@ -707,7 +707,7 @@ grid_options = gb.build()
 
 col1,col2=st.columns([3, 2])
 with col1:
-    AgGrid(tabla_metricas, gridOptions=grid_options, fit_columns_on_grid_load=True, height=250, theme="blue", width='100%')
+    AgGrid(tabla_metricas, gridOptions=grid_options, fit_columns_on_grid_load=False, height=250, theme="blue", width='100%')
 
 with col2:
     st.markdown('<h5 style="color:#003399;"> CALC- Valp</h5>', unsafe_allow_html=True)
