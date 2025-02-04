@@ -456,9 +456,13 @@ def format_as_percentage(df, rows_to_format):
         # Si no está en rows_to_format, no se hace nada con la fila
         # No se cambia ni la conversión ni el formato de los otros valores
     return df
-    
-agrupaciones = ["Día", "Semana", "Mes"]
-agrupacion_seleccionada = st.selectbox("Agrupar por", options=agrupaciones)
+
+col1,col2=st.columns([1,3])
+with col1:
+    agrupaciones = ["Día", "Semana", "Mes"]
+    agrupacion_seleccionada = st.selectbox("Agrupar por", options=agrupaciones)
+with col2:
+    st.write("")
 
 if not Leads_valp.empty:
  
@@ -509,7 +513,8 @@ if not Leads_valp.empty:
 
 
     # Mostrar la tabla de métricas agrupadas
-    st.write(f"Métricas de Conversión Agrupadas por {agrupacion_seleccionada}")
+    st.markdown(f'<p style="color:#000066;font-weight:bold;">Métricas de Conversión Agrupadas por {agrupacion_seleccionada}</p>', unsafe_allow_html=True)
+
 
     # Convertir el DataFrame estilizado a HTML
     styled_html = styled_agrupado_t.to_html()
@@ -517,7 +522,7 @@ if not Leads_valp.empty:
     # Mostrar el DataFrame estilizado en Streamlit
     st.markdown(
     f"""
-    <div style="overflow-x:auto; width: 900px; border: 1px solid #ddd; padding: 2px;">
+    <div style="overflow-x:auto; width: 950px; border: 1px solid #ddd; padding: 2px;">
         {styled_html}
     """,
     unsafe_allow_html=True
@@ -705,11 +710,14 @@ gb.configure_column("Tipificación", header_name="TIPIFICACION 🔹", cellStyle=
 gb.configure_default_column(groupable=True, value=True, enableRowGroup=True, editable=True)
 grid_options = gb.build()
 
-col1,col2=st.columns([3, 2])
+col1,col2,col3=st.columns([2.3, 0.5,2])
 with col1:
     AgGrid(tabla_metricas, gridOptions=grid_options, fit_columns_on_grid_load=False, height=250, theme="blue", width='100%')
 
 with col2:
+   st.write("")
+
+with col3:
     st.markdown('<h5 style="color:#003399;"> CALC- Valp</h5>', unsafe_allow_html=True)
 
     seguimiento_vivo = filtered_df[
