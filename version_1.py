@@ -9,6 +9,7 @@ import io
 import requests
 from pydrive.auth import GoogleAuth
 from pydrive.drive import GoogleDrive
+from st_aggrid import AgGrid, GridOptionsBuilder
 
 import seaborn as sns
 import plotly.express as px
@@ -187,7 +188,9 @@ data2['MUNDO_CALCULADO'] = data2['ult_programa_interes'].apply(clasificar_mundo)
 df['flg_traslados'] = df['flg_traslados'].replace({0: 'Nuevo', 1: 'Traslado'})
 
 df['flg_convocatoria'] = df['flg_convocatoria'].replace({0: 'No Convo', 1: 'Convo'})
-data2['flg_convocatoria'] = data2['flg_convocatoria'].replace({0: 'No Convo', 1: 'Convo'})
+data2['flg_convocatoria'] = data2['flg_convocatoria'].replace({'0': 'No Convo', '1': 'Convo'})
+
+
 
 with st.sidebar:
     st.header("Filtros")
@@ -233,6 +236,7 @@ if mundo_seleccionado == "SIN CARRERA":
     filtered_df_2 = data2[
         (data2['MUNDO_CALCULADO'] == "SIN CARRERA") 
     ]
+
 # Mostrar resultados filtrados
 with st.sidebar:
     try:
@@ -339,7 +343,8 @@ Leads_contactos.columns = ['sc_fecha','unique_id_count']
 
 
 ##------------------------------------------------filtro fecha --------------------------------------------
-min_fecha =  "2025-01-01"
+
+min_fecha =  '2025-01-01'
 max_fecha = filtered_df_2['sc_fecha'].max()
 
 with col2:
@@ -403,8 +408,10 @@ else:
     # Ordenar por fecha
     chart_data = chart_data.sort_values('sc_fecha')
     # Crear el gráfico de línea
+   
+    st.markdown('<p style=" font-weight:bold;">Crecimiento de Conversión por Fecha</p>', unsafe_allow_html=True)
+
     
-    st.write("Crecimiento de Conversión por Fecha")
     st.line_chart(chart_data.set_index('sc_fecha'))
     
     chart_data = pd.merge(chart_data, 
@@ -474,13 +481,11 @@ if not Leads_valp.empty:
     # Calcular las métricas de conversión si no es "Total"
     agrupado['Lead a Contacto'] = (agrupado['CONTACTOS'] / agrupado['Leads_Tocados']) * 100
     agrupado['Contacto a VALP'] = (agrupado['VALP'] / agrupado['CONTACTOS']) * 100
-    
     agrupado['Lead a Contacto'] = agrupado['Lead a Contacto'].map("{:.2f}%".format)
     agrupado['Contacto a VALP'] = agrupado['Contacto a VALP'].map("{:.2f}%".format)
-
+    
     agrupado2 = agrupado.transpose( )
-    
-    
+
 
         # Función para resaltar el color de las letras según las condiciones
     def highlight_values_transposed(row):
@@ -500,6 +505,8 @@ if not Leads_valp.empty:
 
     # Aplicar estilo al DataFrame transpuesto
     styled_agrupado_t = agrupado2.style.apply(highlight_values_transposed, axis=1)
+  
+
 
     # Mostrar la tabla de métricas agrupadas
     st.write(f"Métricas de Conversión Agrupadas por {agrupacion_seleccionada}")
@@ -549,7 +556,7 @@ mundo_counts.columns = ['MUNDO', 'COUNT']
 st.write("")
 st.write("")
 st.markdown(
-    '<h3 style="color:#7E57C2;">Resumen de métricas Total</h3>',
+    '<h3 style="color:#7E57C2;font-weight:bold;">Resumen de métricas Total</h3>',
     unsafe_allow_html=True
 )
 col1, col2, col3, col4, col5,col6,col7,col8= st.columns(8)
@@ -687,13 +694,75 @@ metricas = {
 tabla_metricas = pd.DataFrame(metricas)
 
 # Mostrar la tabla en Streamlit
-st.write("Tabla - STATUS DE BASES")
-col1,col2=st.columns(2)
+st.write("")
+st.markdown('<h5 style="color:#003399;">Tabla - STATUS DE BASES</h5>', unsafe_allow_html=True)
+
+ # Configurar opciones de la tabla
+gb = GridOptionsBuilder.from_dataframe(tabla_metricas)
+gb.configure_side_bar()
+    # Aplicar estilo al índice (columna "ID")
+gb.configure_column("Tipificación", header_name="TIPIFICACION 🔹", cellStyle={'fontWeight': 'bold'})  
+gb.configure_default_column(groupable=True, value=True, enableRowGroup=True, editable=True)
+grid_options = gb.build()
+
+col1,col2=st.columns([3, 2])
 with col1:
-    interactive_table(tabla_metricas)
-    
+    AgGrid(tabla_metricas, gridOptions=grid_options, fit_columns_on_grid_load=True, height=250, theme="blue", width='100%')
+
 with col2:
-    st.write("")
+    st.markdown('<h5 style="color:#003399;"> CALC- Valp</h5>', unsafe_allow_html=True)
+
+    seguimiento_vivo = filtered_df[
+        (filtered_df['dias_sin_contacto'] <= 3) & 
+        (filtered_df['agrupacion_tipificacion_actual'] == "VALORES_VALORACIONES_POSITIVAS") & 
+        (filtered_df['cant_val_pos-vall'] > 0)
+    ]
+    val_vivo = filtered_df[
+    (filtered_df['dias_sin_contacto'] <= 3) & 
+    (filtered_df['agrupacion_tipificacion_actual'] == "VALORES_VALORACIONES_POSITIVAS") &
+    (filtered_df['ult_tipf_dif_sin_contacto'].isin(['Evaluando', 'Interesado']))  
+    ]
+    pps = filtered_df[
+        (filtered_df['agrupacion_tipificacion_actual'] == "VALORES_PROMESA_DE_PAGO") & 
+        (filtered_df['flg_convocatoria'] == "Convo")
+    ]
+
+    # Calcular Q para cada filtro (número de registros únicos)
+    q_seguimiento_vivo = seguimiento_vivo['id_prometeo'].nunique()
+    q_val_vivo = val_vivo['id_prometeo'].nunique()
+    q_pps = pps['id_prometeo'].nunique()
+
+    # Tasas de conversión
+    tasa_seguimiento_vivo = 0.05  # 5%
+    tasa_val_vivo = 0.30  # 30%
+    tasa_pps = 0.80  # 80%
+
+    # Calcular los pagos potenciales
+    pagos_seguimiento_vivo = q_seguimiento_vivo * tasa_seguimiento_vivo
+    pagos_val_vivo = q_val_vivo * tasa_val_vivo
+    pagos_pps = q_pps * tasa_pps
+
+    # Construir la tabla
+    data = {
+        'Q': [q_seguimiento_vivo, q_val_vivo, q_pps],
+        '% de conversión': [f"{tasa_seguimiento_vivo*100}%", f"{tasa_val_vivo*100}%", f"{tasa_pps*100}%"],
+        'Pagos potenciales': [pagos_seguimiento_vivo, pagos_val_vivo, pagos_pps]
+    }
+    tabla_resultado = pd.DataFrame(data, index=['Seguimiento vivo', 'Val+ vivo', 'PPs'])
+
+    # Agregar total
+    total_q = q_seguimiento_vivo + q_val_vivo + q_pps
+    total_pagos = pagos_seguimiento_vivo + pagos_val_vivo + pagos_pps
+
+    tabla_resultado.loc['Total'] = [total_q, '', total_pagos]
+    st.dataframe(tabla_resultado)
+    
+
+
+
+
+
+
 
 
 # Crear DataFrame
@@ -726,17 +795,64 @@ filtered_df3_perdido.loc[:, 'dsnc'] = pd.cut(filtered_df3_perdido.loc[:, 'dias_s
 tabla = pd.pivot_table(filtered_df3_perdido, index='ult_tipf_dif_sin_contacto_2', columns='dsnc', aggfunc='size', fill_value=0, observed=False)
 
 tabla['Total'] = tabla.sum(axis=1)
+# Restablecer el índice para que sea visible en AgGrid
+tabla = tabla.reset_index()
 # Mostrar la tabla en Streamlit
-st.write("Matriz de Perdidos / Días sin contacto")
+st.markdown('<h5 style="color:#003399;">Matriz de Perdidos / Días sin contacto</h5>', unsafe_allow_html=True)
+
+
+# Configuración de la tabla
+gb = GridOptionsBuilder.from_dataframe(tabla)
+gb.configure_side_bar()
+gb.configure_column("ult_tipf_dif_sin_contacto_2", header_name="TIPIFICACION 2🔹", cellStyle={'fontWeight': 'bold'})  
+gb.configure_default_column(groupable=True, value=True, enableRowGroup=True, editable=True) 
+grid_options = gb.build()
+
+
 #st.dataframe(tabla)
 
-col1,col2=st.columns(2)
+col1,col2=st.columns([3, 2])
 with col1:
-    interactive_table(tabla)
-with col2:
+    AgGrid(tabla, gridOptions=grid_options, fit_columns_on_grid_load=True, height=400, theme="blue", width='100%')
+
+with col2:  
     st.write("")
+    
+    # Crear DataFrame
+    filtered_df4 = filtered_df
 
+    # Definir los valores mínimos y máximos de las columnas
+    min_dsnc = filtered_df4['dias_sin_contacto'].min()
+    max_dsnc = filtered_df4['dias_sin_contacto'].max()
 
+    # Lista de límites superiores para los rangos de cada columna
+
+    bins_dsnc = [min_dsnc, 7, 14, 21, 30, max_dsnc]  # Definido manualmente
+
+    # Generar etiquetas basadas en los límites de los rangos
+
+    labels_dsnc = [f"{bins_dsnc[i]}-{bins_dsnc[i+1]-1}" 
+                        for i in range(len(bins_dsnc) - 1)]
+
+    # Filtrar los datos donde 'ult_tipf_dif_sin_contacto' es igual a "Perdido"
+    filtered_df4_pp = filtered_df4[filtered_df4['agrupacion_tipificacion_actual'] == "VALORES_PROMESA_DE_PAGO"]
+    filtered_df4_pp.loc[:, 'agrupacion_tipificacion_actual'] = filtered_df4_pp['agrupacion_tipificacion_actual'].replace("VALORES_PROMESA_DE_PAGO", "PP")
+    
+
+    # Obtener los valores únicos de 'ult_tipf_dif_sin_contacto_2' solo para los casos "Perdido"
+    filtered_df4_pp = filtered_df4_pp.copy()
+    filtered_df4_pp.loc[:, 'dsnc'] = pd.cut(filtered_df4_pp.loc[:, 'dias_sin_contacto'], bins=bins_dsnc, labels=labels_dsnc, right=False)
+
+    # Crear la tabla dinámica con pivot_table
+    tabla = pd.pivot_table(filtered_df4_pp, index='agrupacion_tipificacion_actual', columns='dsnc', aggfunc='size', fill_value=0, observed=False)
+
+    tabla['Total'] = tabla.sum(axis=1)
+    # Restablecer el índice para que sea visible en AgGrid
+    tabla = tabla.rename_axis("📌 Tipificación").reset_index()
+    # Mostrar la tabla en Streamlit
+    st.markdown('<h5 style="color:#003399;">Matriz de PP / Días sin contacto</h5>', unsafe_allow_html=True)
+    # Configuración de la tabla
+    st.dataframe(tabla,hide_index=True)
 
 
 col1,col2=st.columns(2)
@@ -803,7 +919,7 @@ with col2:
 
 
 # Crear DataFrame
-st.write("Matriz de Toques / Días de Vida")
+st.markdown('<h5 style="color:#003399;">Matriz de Toques / Días de Vida</h5>', unsafe_allow_html=True)
 
 # Dividir el espacio en columnas
 col1, col2 = st.columns([5, 2])  # Ajusta los tamaños relativos de las columnas
@@ -871,10 +987,16 @@ with col1:
 
     # Agregar una columna de totales
     tabla['Total'] = tabla.sum(axis=1)
-
-    # Mostrar la tabla en Streamlit
-    #st.dataframe(tabla)
-    interactive_table(tabla)
+    tabla = tabla.reset_index()
+    # Configurar opciones de la tabla
+    gb = GridOptionsBuilder.from_dataframe(tabla)
+    gb.configure_side_bar()
+    # Aplicar estilo al índice (columna "ID")
+    gb.configure_column("cantidad_tipificaciones", header_name="TIPIFICACIONES 🔹", cellStyle={'fontWeight': 'bold'})  
+    gb.configure_default_column(groupable=True, value=True, enableRowGroup=True, editable=True)
+    grid_options = gb.build()
+    
+    AgGrid(tabla, gridOptions=grid_options, fit_columns_on_grid_load=False, height=400, theme="blue")
 
 
 # "turno"  == mañana tarde 
