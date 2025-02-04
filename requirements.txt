@@ -14,4 +14,4 @@ requests
 openpyxl
 seaborn
 plotly
-st-aggrid
+streamlit-aggrid==1.1.0
