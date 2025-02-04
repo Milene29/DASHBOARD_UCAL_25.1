@@ -746,15 +746,19 @@ with col2:
     data = {
         'Q': [q_seguimiento_vivo, q_val_vivo, q_pps],
         '% de conversión': [f"{tasa_seguimiento_vivo*100}%", f"{tasa_val_vivo*100}%", f"{tasa_pps*100}%"],
-        'Pagos potenciales': [pagos_seguimiento_vivo, pagos_val_vivo, pagos_pps]
+        'Pagos potenciales': [round(pagos_seguimiento_vivo), round(pagos_val_vivo), round(pagos_pps)]
     }
     tabla_resultado = pd.DataFrame(data, index=['Seguimiento vivo', 'Val+ vivo', 'PPs'])
 
     # Agregar total
-    total_q = q_seguimiento_vivo + q_val_vivo + q_pps
-    total_pagos = pagos_seguimiento_vivo + pagos_val_vivo + pagos_pps
+    total_q = sum(data['Q'])
+    total_pagos = sum(data['Pagos potenciales'])
 
     tabla_resultado.loc['Total'] = [total_q, '', total_pagos]
+
+    tabla_resultado = tabla_resultado.style.highlight_max(subset='Pagos potenciales', axis=0, 
+                                   props='color: #990000;')
+
     st.dataframe(tabla_resultado)
     
 
@@ -798,7 +802,7 @@ tabla['Total'] = tabla.sum(axis=1)
 # Restablecer el índice para que sea visible en AgGrid
 tabla = tabla.reset_index()
 # Mostrar la tabla en Streamlit
-st.markdown('<h5 style="color:#003399;">Matriz de Perdidos / Días sin contacto</h5>', unsafe_allow_html=True)
+st.markdown('<h5 style="color:#003399;">Perdidos / Días sin contacto</h5>', unsafe_allow_html=True)
 
 
 # Configuración de la tabla
@@ -813,7 +817,7 @@ grid_options = gb.build()
 
 col1,col2=st.columns([3, 2])
 with col1:
-    AgGrid(tabla, gridOptions=grid_options, fit_columns_on_grid_load=True, height=400, theme="blue", width='100%')
+    AgGrid(tabla, gridOptions=grid_options, fit_columns_on_grid_load=False, height=400, theme="blue", width='100%')
 
 with col2:  
     st.write("")
@@ -850,8 +854,9 @@ with col2:
     # Restablecer el índice para que sea visible en AgGrid
     tabla = tabla.rename_axis("📌 Tipificación").reset_index()
     # Mostrar la tabla en Streamlit
-    st.markdown('<h5 style="color:#003399;">Matriz de PP / Días sin contacto</h5>', unsafe_allow_html=True)
+    st.markdown('<h5 style="color:#003399;">PP / Días sin contacto</h5>', unsafe_allow_html=True)
     # Configuración de la tabla
+    
     st.dataframe(tabla,hide_index=True)
 
 
@@ -919,7 +924,7 @@ with col2:
 
 
 # Crear DataFrame
-st.markdown('<h5 style="color:#003399;">Matriz de Toques / Días de Vida</h5>', unsafe_allow_html=True)
+st.markdown('<h5 style="color:#003399;">Toques / Días de Vida</h5>', unsafe_allow_html=True)
 
 # Dividir el espacio en columnas
 col1, col2 = st.columns([5, 2])  # Ajusta los tamaños relativos de las columnas
