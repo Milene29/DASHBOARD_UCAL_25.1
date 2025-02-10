@@ -307,42 +307,6 @@ with st.sidebar:
      
 
 
-# Agrupar por 'sc_fecha' y contar los 'id_prometeo' únicos
-id_prometeo_fechas = filtered_df_2.groupby('sc_fecha')['id_prometeo'].nunique()
-
-# Convertir a DataFrame para mejor visualización
-Leads_gestion_diaria = id_prometeo_fechas.reset_index()
-Leads_gestion_diaria.columns = ['sc_fecha', 'unique_id_count']
-
-
-
-# Filtrar los datos para excluir al "TI" Integrador
-filtered_data = filtered_df_2[filtered_df_2['nombre_asesor'] != 'TI']
-# Agrupar por 'nombre_asesor' y contar los 'id_prometeo' únicos por fecha
-Leads_gestionados = (
-    filtered_data.groupby('sc_fecha')['id_prometeo']
-    .nunique()
-)
-Leads_gestionados = Leads_gestionados.reset_index()
-# Renombrar columnas para claridad
-Leads_gestionados.columns = ['sc_fecha','unique_id_count']
-# Mostrar el resultad
-
-
-filtered_data= filtered_df_2[(filtered_df_2['desc_resultado_1'] != 'Sin contacto')  & 
-    (filtered_df_2['nombre_asesor'] != 'TI')]
-
-Leads_contactos = (
-    filtered_data.groupby('sc_fecha')['id_prometeo']
-    .nunique()
-)
-Leads_contactos = Leads_contactos.reset_index()
-# Renombrar columnas para claridad
-Leads_contactos.columns = ['sc_fecha','unique_id_count']
-# Mostrar el resultado
-
-
-##------------------------------------------------filtro fecha --------------------------------------------
 
 min_fecha =  '2025-01-01'
 max_fecha = filtered_df_2['sc_fecha'].max()
@@ -364,30 +328,62 @@ filtered_df_2 = filtered_df_2[
             (filtered_df_2['sc_fecha'] >= rango_fechas_str[0]) &
             (filtered_df_2['sc_fecha'] <= rango_fechas_str[1])
         ]
-## ----------------------------------------------------------------------------------------------------
+# Agrupar por 'sc_fecha' y contar los 'id_prometeo' únicos
+
+
+id_prometeo_fechas = filtered_df_2.groupby('sc_fecha')['id_prometeo'].nunique()
+# Convertir a DataFrame para mejor visualización
+Leads_gestion_diaria = id_prometeo_fechas.reset_index()
+Leads_gestion_diaria.columns = ['sc_fecha', 'unique_id_count']
+
+
+# Filtrar los datos para excluir al "TI" Integrador
+filtered_data = filtered_df_2[filtered_df_2['nombre_asesor'] != 'TI']
+# Agrupar por 'nombre_asesor' y contar los 'id_prometeo' únicos por fecha
+Leads_gestionados = (
+    filtered_data.groupby('sc_fecha')['id_prometeo']
+    .nunique()
+)
+Leads_gestionados = Leads_gestionados.reset_index()
+# Renombrar columnas para claridad
+Leads_gestionados.columns = ['sc_fecha','unique_id_count']
+# Mostrar el resultad
+
+
+
+filtered_data2= filtered_df_2[(filtered_df_2['desc_resultado_1'] != 'Sin contacto')  & 
+    (filtered_df_2['nombre_asesor'] != 'TI')]
+
+Leads_contactos = (
+    filtered_data2.groupby('sc_fecha')['id_prometeo']
+    .nunique()
+)
+Leads_contactos = Leads_contactos.reset_index()
+# Renombrar columnas para claridad
+Leads_contactos.columns = ['sc_fecha','unique_id_count']
+# Mostrar el resultado
+
+
 
 # Filtrar los datos según las condiciones proporcionadas
-filtered_data = filtered_df_2[
-    (filtered_df_2['desc_resultado_1'].isin(["Evaluando", "Interesado"])) & 
+filtered_data3 = filtered_df_2[
+    (filtered_df_2['desc_resultado_1'].isin(["Evaluando", "Interesado","Registrado a evento","Se inscribio","Promesa de pago","Registrado a evento"])) & 
     (filtered_df_2['desc_resultado_1'] != 'Sin contacto') & 
     (filtered_df_2['nombre_asesor'] != 'TI') 
 ]
 # Agrupar por 'sc_fecha' y contar los valores únicos de 'id_prometeo'
 Leads_valp = (
-    filtered_data.groupby('sc_fecha')['id_prometeo']
+    filtered_data3.groupby('sc_fecha')['id_prometeo']
     .nunique()
     .reset_index(name='unique_id_count')  # Convertir a DataFrame y nombrar la columna
 )
-
+print(Leads_valp)
 
 
 # Verificar si el DataFrame tiene datos válidos
-if Leads_valp.empty:
+if Leads_gestion_diaria.empty:
     st.error("No se encontraron datos válidos para las condiciones proporcionadas.")
 else:
-    # Asegurar que las fechas estén en formato datetime y ordenadas
-
-     # Realizar el merge de los tres DataFrames por 'sc_fecha'
     chart_data = pd.merge(
                         Leads_gestionados[['sc_fecha', 'unique_id_count']], 
                           Leads_contactos[['sc_fecha', 'unique_id_count']], 
@@ -411,7 +407,7 @@ else:
    
     st.markdown('<p style=" font-weight:bold;">Crecimiento de Conversión por Fecha</p>', unsafe_allow_html=True)
 
-    
+
     st.line_chart(chart_data.set_index('sc_fecha'))
     
     chart_data = pd.merge(chart_data, 
@@ -437,10 +433,38 @@ else:
                             'Contacto a VALP']]
     chart_data = chart_data.set_index("sc_fecha")
     
-    # Transponer el DataFrame original antes de aplicar estilo
-    transposed_chart_data = chart_data.T  # Transpone el DataFrame
+    
+    
+    
+    
+    
+    
+    chart_data_dict = {
+    'Métrica': ['Leads_Tocados', 'Leads_Asesor', 'CONTACTOS', 'VALP', 'Lead a Contacto', 'Contacto a VALP']
+}
 
-    # Definir los colores en función del valor de porcentaje
+    # Rellenar con datos desde los DataFrames originales
+    for fecha in Leads_gestion_diaria['sc_fecha']:
+        # Obtener los valores correspondientes a cada métrica por fecha
+        leads_tocados = Leads_gestion_diaria.loc[Leads_gestion_diaria['sc_fecha'] == fecha, 'unique_id_count'].sum()
+        leads_asesor = Leads_gestionados.loc[Leads_gestionados['sc_fecha'] == fecha, 'unique_id_count'].sum()
+        contactos = Leads_contactos.loc[Leads_contactos['sc_fecha'] == fecha, 'unique_id_count'].sum()
+        valp = Leads_valp.loc[Leads_valp['sc_fecha'] == fecha, 'unique_id_count'].sum()
+
+        # Calcular tasas de conversión
+        lead_a_contacto = (contactos / leads_tocados) * 100 if leads_tocados > 0 else 0
+        contacto_a_valp = (valp / contactos) * 100 if contactos > 0 else 0
+
+        # Agregar datos al diccionario
+        chart_data_dict[fecha] = [leads_tocados, leads_asesor, contactos, valp, lead_a_contacto, contacto_a_valp]
+        
+    
+    # Convertir el diccionario en un DataFrame
+    chart_data2 = pd.DataFrame(chart_data_dict).set_index('Métrica')
+    
+    
+    
+        
 
 def format_as_percentage(df, rows_to_format):
     """
@@ -464,11 +488,11 @@ with col1:
 with col2:
     st.write("")
 
-if not Leads_valp.empty:
+if not Leads_gestion_diaria.empty:
  
     # Convertir 'sc_fecha' a datetime para facilitar la agrupación (sin modificar permanentemente)
     temp_chart_data = chart_data.reset_index()
-    temp_chart_data['sc_fecha_temp'] = pd.to_datetime(temp_chart_data['sc_fecha'], errors='coerce')
+    temp_chart_data['sc_fecha_temp'] = pd.to_datetime(Leads_gestion_diaria['sc_fecha'], errors='coerce')
     # Formatear la fecha para que muestre solo "Año-Mes-Día"
     
     # Realizar la agrupación según la selección
@@ -488,8 +512,10 @@ if not Leads_valp.empty:
     agrupado['Lead a Contacto'] = agrupado['Lead a Contacto'].map("{:.2f}%".format)
     agrupado['Contacto a VALP'] = agrupado['Contacto a VALP'].map("{:.2f}%".format)
     
-    agrupado2 = agrupado.transpose( )
 
+    agrupado2 = agrupado.transpose( )
+  
+    st.dataframe(agrupado2)
 
         # Función para resaltar el color de las letras según las condiciones
     def highlight_values_transposed(row):
