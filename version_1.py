@@ -10,7 +10,6 @@ import requests
 from pydrive.auth import GoogleAuth
 from pydrive.drive import GoogleDrive
 from st_aggrid import AgGrid, GridOptionsBuilder
-
 import seaborn as sns
 import plotly.express as px
 
@@ -82,6 +81,7 @@ def load_data():
     folder_id = '17E4c2ShTX0jbH3_4REOv5oCTY2_ypSxZ'
     archivos_descargados = obtener_archivos_drive(folder_id)
     
+    data_pago=pd.read_excel('Master_Pagos.xlsx')
     df, data2, data3 = None, None, None
 
     for archivo_name, archivo_content in archivos_descargados:
@@ -109,10 +109,10 @@ def load_data():
         except Exception as e:
             print(f"Error al procesar {archivo_name}: {e}")
 
-    return df, data2, data3
+    return df, data2, data3,data_pago
 
 # Cargar datos
-df, data2, data3 = load_data()
+df, data2, data3 ,data_pago= load_data()
 
 # Verificar si los datos se cargaron correctamente
 if df is None or data2 is None or data3 is None:
@@ -269,7 +269,7 @@ with st.sidebar:
      filtered_df = filtered_df[filtered_df['flg_traslados'] == tipo_select]
      # Filtrar los IDs con flg_traslados = 1
      traslados_ids = filtered_df[filtered_df['flg_traslados'] == tipo_select, 'id_prometeo']
-     print(f"Datos de data3 cargados. Columnas: {traslados_ids.columns.tolist()}")
+
     # Cruzar los IDs con filtered_df_2
      filtered_df_2 = filtered_df_2[filtered_df_2['id_prometeo'].isin(traslados_ids)]
     
@@ -377,8 +377,6 @@ Leads_valp = (
     .nunique()
     .reset_index(name='unique_id_count')  # Convertir a DataFrame y nombrar la columna
 )
-print(Leads_valp)
-
 
 # Verificar si el DataFrame tiene datos válidos
 if Leads_gestion_diaria.empty:
@@ -416,8 +414,6 @@ else:
                           suffixes=('', '_Leads_Tocados'))
 
     chart_data = chart_data.rename(columns={'unique_id_count': 'Leads_Tocados'})
-    
-    
     chart_data['Lead a Contacto'] = (chart_data['CONTACTOS'] / chart_data['Leads_Tocados']) * 100
     chart_data['Contacto a VALP'] = (chart_data['VALP'] / chart_data['CONTACTOS']) * 100
         # Formatear los valores al formato porcentaje (xx.xx%) en el DataFrame original
@@ -432,13 +428,6 @@ else:
                             'Lead a Contacto', 
                             'Contacto a VALP']]
     chart_data = chart_data.set_index("sc_fecha")
-    
-    
-    
-    
-    
-    
-    
     chart_data_dict = {
     'Métrica': ['Leads_Tocados', 'Leads_Asesor', 'CONTACTOS', 'VALP', 'Lead a Contacto', 'Contacto a VALP']
 }
@@ -514,7 +503,9 @@ if not Leads_gestion_diaria.empty:
     
 
     agrupado2 = agrupado.transpose( )
-  
+    st.markdown(f'<p style="color:#000066;font-weight:bold;">Métricas de Gestión - {agrupacion_seleccionada}</p>', unsafe_allow_html=True)
+
+
     st.dataframe(agrupado2)
 
         # Función para resaltar el color de las letras según las condiciones
@@ -535,14 +526,6 @@ if not Leads_gestion_diaria.empty:
 
     # Aplicar estilo al DataFrame transpuesto
     styled_agrupado_t = agrupado2.style.apply(highlight_values_transposed, axis=1)
-  
-
-
-    # Mostrar la tabla de métricas agrupadas
-    st.markdown(f'<p style="color:#000066;font-weight:bold;">Métricas de Conversión Agrupadas por {agrupacion_seleccionada}</p>', unsafe_allow_html=True)
-
-
-    # Convertir el DataFrame estilizado a HTML
     styled_html = styled_agrupado_t.to_html()
 
     # Mostrar el DataFrame estilizado en Streamlit
@@ -557,6 +540,57 @@ if not Leads_gestion_diaria.empty:
 
 else:
     st.error("No se encontraron datos válidos para las condiciones proporcionadas.")
+
+
+
+
+
+st.markdown(f'<p style="color:#000066;font-weight:bold;">Métricas de Gestión COHORT </p>', unsafe_allow_html=True)
+
+df_cohort = filtered_df[filtered_df['flg_convocatoria'] == "Convo"].copy()
+
+# Convertir la columna de fecha a tipo datetime
+df_cohort['fecha_primera_tipif'] = pd.to_datetime(df_cohort['fecha_primera_tipif'], errors='coerce').dt.date
+df_cohort['prim_tipif_dif_sin_contacto_fecha'] = pd.to_datetime(df_cohort['prim_tipif_dif_sin_contacto_fecha'], errors='coerce').dt.date
+df_cohort['fecha_primera_valp'] = pd.to_datetime(df_cohort['fecha_primera_valp'], errors='coerce').dt.date
+df_cohort['pagante_cohort'] = df_cohort['id_prometeo'].isin(data_pago['ID PROMETEO']).astype(int)
+
+# Filtrar desde el 1 de enero de 2025
+df_cohort = df_cohort[df_cohort['fecha_primera_tipif'] >= pd.to_datetime("2025-01-01").date()]
+
+# Crear columna Contactados Cohort con la condición dada
+df_cohort['contactado_cohort'] = (df_cohort['fecha_primera_tipif'] == df_cohort['prim_tipif_dif_sin_contacto_fecha']).astype(int)
+df_cohort['val_plus_cohort'] = (df_cohort['fecha_primera_tipif'] == df_cohort['fecha_primera_valp']).astype(int)
+
+# Calcular métricas
+leads_cohort = df_cohort.groupby('fecha_primera_tipif')['id_prometeo'].count()
+contactados_cohort = df_cohort.groupby('fecha_primera_tipif')['contactado_cohort'].sum()
+val_plus_cohort = df_cohort.groupby('fecha_primera_tipif')['val_plus_cohort'].sum()
+pagante_cohort = df_cohort.groupby('fecha_primera_tipif')['pagante_cohort'].sum()
+
+# Calcular las métricas porcentuales
+pct_contactados = (contactados_cohort / leads_cohort * 100).fillna(0).astype(int)
+pct_contacto_valp = (val_plus_cohort / contactados_cohort * 100).fillna(0).astype(int)
+pct_lead_valp = (val_plus_cohort / leads_cohort * 100).fillna(0).astype(int)
+pct_pagantes = ((pagante_cohort / contactados_cohort) * 100).replace([float('inf'), -float('inf')], 0).fillna(0).astype(int)
+
+# Crear DataFrame final
+cohort_metrics = pd.DataFrame({
+    'Leads Cohort': leads_cohort,
+    'Contactados Cohort': contactados_cohort,
+    'Val + Cohort': val_plus_cohort,
+    'Pagante Cohort': pagante_cohort,
+    '% Contactados Cohort': pct_contactados.astype(str) + '%',
+    '% Contacto a Valp': pct_contacto_valp.astype(str) + '%',
+    '% lead a Valp': pct_lead_valp.astype(str) + '%',
+    '% Pagantes Cohort': pct_pagantes.astype(str) + '%'
+})
+
+# Transponer para que las fechas sean columnas
+cohort_metrics = cohort_metrics.T
+
+st.dataframe(cohort_metrics)
+
 
 
 
