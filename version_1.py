@@ -693,8 +693,8 @@ with col6:
 
 with col7:
     # Contar la cantidad de leads pagantes
-    leads_pagantes = filtered_df[filtered_df['agrupacion_tipificacion_actual'] == "VALORES_PAGANTE"]['id_prometeo'].nunique()
-    st.metric(" Pagantes", format_with_commas(leads_pagantes))
+    leads_pagantes = data_pago['ID PROMETEO'].nunique()
+    st.metric("Pagantes", format_with_commas(leads_pagantes))
 
 
 with col8:
