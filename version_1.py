@@ -1,85 +1,15 @@
 import streamlit as st
 import pandas as pd
-import datetime
-import pytz
-from itables.streamlit import interactive_table
-from pydrive.auth import GoogleAuth
-from pydrive.drive import GoogleDrive
 import io
-import requests
-from pydrive.auth import GoogleAuth
-from pydrive.drive import GoogleDrive
 from st_aggrid import AgGrid, GridOptionsBuilder
-import seaborn as sns
 import plotly.express as px
+import funciones_generales as fg
 
-# Set page config
 st.set_page_config(page_title="Streamlit Dashboard", layout="wide")
-# Define function to get today's date in Lima timezone
-def fecha_peru_hoy():
-    lima_timezone = pytz.timezone('America/Lima')
-    lima_time = datetime.datetime.now(lima_timezone)
-    return lima_time.date()
-
-today_string = fecha_peru_hoy().strftime('%y%m%d')
-
-from pydrive.auth import GoogleAuth
-from pydrive.drive import GoogleDrive
-
-def autenticar_drive():
-    gauth = GoogleAuth()
-    # Intenta cargar las credenciales almacenadas
-    gauth.LoadCredentialsFile("mycreds.txt")
-    if gauth.credentials is None:
-        # Autenticación si no hay credenciales guardadas
-        gauth.LocalWebserverAuth()  # Esto abre un navegador para autorizar la app
-        gauth.SaveCredentialsFile("mycreds.txt") 
-    elif not gauth.credentials or gauth.access_token_expired:
-        if gauth.access_token_expired:
-            print("Access token expired. Refreshing...")
-        # Solicitar acceso offline para obtener un refresh token
-            gauth.LocalWebserverAuth()  # No es necesario el parámetro 'access_type'
-            gauth.SaveCredentialsFile("mycreds.txt")  # Guardar las credenciales para la próxima vez
-    else:
-        # Autorizar con las credenciales guardadas
-        gauth.Authorize()
-
-    # Retorna el objeto GoogleDrive con las credenciales autorizadas
-    drive = GoogleDrive(gauth)
-    return drive
-
-# Función para obtener archivos de una carpeta de Google Drive y descargarlos
-def obtener_archivos_drive(folder_id):
-    drive = autenticar_drive()
-    file_list = drive.ListFile({'q': f"'{folder_id}' in parents"}).GetList()
-    archivos_descargados = []
-    archivos_vistos = set()  # Evitar duplicados
-
-    for file in file_list:
-        file_name = file['title']
-        file_id = file['id']
-        
-        # Verificar si es un archivo válido (CSV o Excel)
-        if file_name.endswith(('.csv', '.xlsx')) and file_name not in archivos_vistos:
-            print(f"Cargando archivo: {file_name}")
-            file_url = f"https://drive.google.com/uc?export=download&id={file_id}"
-            
-            try:
-                file_content = requests.get(file_url).content
-                archivos_descargados.append((file_name, file_content))
-                archivos_vistos.add(file_name)
-            except Exception as e:
-                print(f"Error al descargar {file_name}: {e}")
-
-    return archivos_descargados
-# Llamada a la función con el folder ID de tu carpeta de Google Drive
-
-
-# Función para cargar los datos
 @st.cache_data
 def load_data():
     folder_id = '17E4c2ShTX0jbH3_4REOv5oCTY2_ypSxZ'
-    archivos_descargados = obtener_archivos_drive(folder_id)
+    archivos_descargados = fg.obtener_archivos_drive(folder_id)
     
     data_pago=pd.read_excel('Master_Pagos.xlsx')
     df, data2, data3 = None, None, None
@@ -92,7 +22,6 @@ def load_data():
                 df = pd.read_excel(io.BytesIO(archivo_content), engine='openpyxl')
                 print(f"Datos de excel cargados. Columnas: {df.columns.tolist()}")
                 print("Archivo Excel cargado correctamente.")
-
             elif 'bbdd_ucal2' in archivo_name:
                 data2 = pd.read_csv(io.BytesIO(archivo_content), dtype=str)
                 data2.columns = data2.columns.str.strip().str.replace(' ', '_')
@@ -102,15 +31,12 @@ def load_data():
                 data3 = pd.read_csv(io.BytesIO(archivo_content), dtype=str)
                 data3.columns = data3.columns.str.strip().str.replace(' ', '_')
                 print(f"Datos de data3 cargados. Columnas: {data3.columns.tolist()}")
-
             elif archivo_content.startswith(b'<!DOCTYPE html>'):
                 print("Error: Se intentó descargar una página en lugar de un CSV")
-
         except Exception as e:
             print(f"Error al procesar {archivo_name}: {e}")
 
     return df, data2, data3,data_pago
-
 # Cargar datos
 df, data2, data3 ,data_pago= load_data()
 
@@ -139,16 +65,11 @@ else:
         '<h3 style="color:#7E57C2;">Resumen de métricas CONVERSIÓN</h3>',
         unsafe_allow_html=True
     )
-
     # Selección de la base de datos
     col1, col2 = st.columns(2)
     with col1:
-        agrupaciones = ["Real", "Espejo"]
-        agrupacion_seleccionada = st.selectbox("Seleccione Base", options=agrupaciones)
-        if agrupacion_seleccionada == "Real":
-            data2 = data2
-        else:
-            data2 = data3
+        agrupacion_seleccionada = st.selectbox("Seleccione Base", ["Real", "Espejo"])
+        data2 = data2 if agrupacion_seleccionada == "Real" else data3
 # Helper function to format numbers with commas
 def format_with_commas(number):
     return f"{number:,}"
@@ -175,15 +96,11 @@ def clasificar_mundo(ult_programa_interes):
     elif ult_programa_interes == "SIN CARRERA":
         return "SIN CARRERA"
 
-
-# Add a calculated column for Mundo
-# Asignar 'SIN CARRERA' a las celdas vacías o nulas
 df['ult_programa_interes'] = df['ult_programa_interes'].fillna('SIN CARRERA')
 data2['ult_programa_interes'] = data2['ult_programa_interes'].fillna('SIN CARRERA')
 
 df['MUNDO_CALCULADO'] = df['ult_programa_interes'].apply(clasificar_mundo)
 data2['MUNDO_CALCULADO'] = data2['ult_programa_interes'].apply(clasificar_mundo)
-
 
 df['flg_traslados'] = df['flg_traslados'].replace({0: 'Nuevo', 1: 'Traslado'})
 
@@ -198,7 +115,7 @@ with st.sidebar:
     # Filtro de mundos
     mundos_disponibles = ["TODAS LAS CARRERAS"] + df['MUNDO_CALCULADO'].dropna().unique().tolist()
     mundo_seleccionado = st.selectbox("Selecciona un mundo", options=mundos_disponibles)
-    
+
     # Filtro de carreras dinámico según el mundo seleccionado
     if mundo_seleccionado == "TODAS LAS CARRERAS":
         carreras_disponibles = df['ult_programa_interes'].dropna().unique()
@@ -213,7 +130,6 @@ with st.sidebar:
     else:
         carrera_seleccionada = None
 
-
 filtered_df = df.copy()
 filtered_df_2 = data2.copy()
 
@@ -221,21 +137,13 @@ filtered_df_2 = data2.copy()
 if mundo_seleccionado != "TODAS LAS CARRERAS":
     filtered_df = df[df['MUNDO_CALCULADO'] == mundo_seleccionado]
     filtered_df_2=data2[data2['MUNDO_CALCULADO'] == mundo_seleccionado]
-    
 # Filtrar por mundo
 if carrera_seleccionada != "Todas":
     filtered_df = df[(df['MUNDO_CALCULADO'] == mundo_seleccionado) & (df['ult_programa_interes'] == carrera_seleccionada) ]
     filtered_df_2 = data2[(data2['MUNDO_CALCULADO'] == mundo_seleccionado) & (data2['ult_programa_interes'] == carrera_seleccionada) ]
 
-# Filtrar por carrera
 if mundo_seleccionado == "SIN CARRERA":
-
-    filtered_df = df[
-        (df['MUNDO_CALCULADO'] == "SIN CARRERA") 
-    ]
-    filtered_df_2 = data2[
-        (data2['MUNDO_CALCULADO'] == "SIN CARRERA") 
-    ]
+    filtered_df, filtered_df_2 = map(lambda d: d[d['MUNDO_CALCULADO'] == "SIN CARRERA"], [df, data2])
 
 # Mostrar resultados filtrados
 with st.sidebar:
@@ -247,30 +155,19 @@ with st.sidebar:
             min_dias = int(filtered_df['dias_sin_contacto'].min())
             max_dias = int(filtered_df['dias_sin_contacto'].max())
 
-            # Configurar el slider para seleccionar el rango de días sin contacto
-            rango_dias = st.slider(
-                "Selecciona el rango de días sin contacto",
-                min_dias,
-                max_dias,
-                (min_dias, max_dias)  # Rango por defecto: mínimo a máximo
-            )
-
+            rango_dias = st.slider("Selecciona el rango de días sin contacto", min_dias, max_dias, (min_dias, max_dias))
             # Filtrar los datos según el rango seleccionado
-            filtered_df = filtered_df[
-                (filtered_df['dias_sin_contacto'] >= rango_dias[0]) &
-                (filtered_df['dias_sin_contacto'] <= rango_dias[1])
-            ]
+            filtered_df = filtered_df.query("@rango_dias[0] <= dias_sin_contacto <= @rango_dias[1]")
     except ValueError as e:
-                st.error(f"Error al procesar la columna 'dias_sin_contacto': {e}")   
+                st.error(f"Error al procesar la columna 'dias_sin_contacto': {e}")  
+                 
     tipo_ingreso =["Todos"] + filtered_df['flg_traslados'].unique().tolist()
     tipo_select= st.selectbox("Tipo Ingreso", options=tipo_ingreso)
     if tipo_select != "Todos":
         # Filtrar por el canal seleccionado
      filtered_df = filtered_df[filtered_df['flg_traslados'] == tipo_select]
      # Filtrar los IDs con flg_traslados = 1
-     traslados_ids = filtered_df[filtered_df['flg_traslados'] == tipo_select, 'id_prometeo']
-
-    # Cruzar los IDs con filtered_df_2
+     traslados_ids = filtered_df[filtered_df['flg_traslados'] == tipo_select]
      filtered_df_2 = filtered_df_2[filtered_df_2['id_prometeo'].isin(traslados_ids)]
     
  
