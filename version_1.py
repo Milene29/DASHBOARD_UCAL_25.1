@@ -260,8 +260,6 @@ Leads_contactos = Leads_contactos.reset_index()
 Leads_contactos.columns = ['sc_fecha','unique_id_count']
 # Mostrar el resultado
 
-
-
 # Filtrar los datos según las condiciones proporcionadas
 filtered_data3 = filtered_df_2[
     (filtered_df_2['desc_resultado_1'].isin(["Evaluando", "Interesado","Registrado a evento","Se inscribio","Promesa de pago","Registrado a evento"])) & 
@@ -274,10 +272,20 @@ Leads_valp = (
     .nunique()
     .reset_index(name='unique_id_count')  # Convertir a DataFrame y nombrar la columna
 )
+if '2025-02-09' not in Leads_valp['sc_fecha'].values:
+    # Crear un DataFrame para la fecha faltante
+    missing_date_df = pd.DataFrame({'sc_fecha': ['2025-02-09'], 'unique_id_count': [0]})
+    # Usar pd.concat() para agregar la nueva fecha al DataFrame original
+    Leads_valp = pd.concat([Leads_valp, missing_date_df], ignore_index=True)
+
+# Ordenar el DataFrame por la fecha ('sc_fecha') de forma ascendente
+
+Leads_valp = Leads_valp.sort_values(by='sc_fecha').reset_index(drop=True)
 
 # Verificar si el DataFrame tiene datos válidos
 if Leads_gestion_diaria.empty:
     st.error("No se encontraron datos válidos para las condiciones proporcionadas.")
+
 else:
     chart_data = pd.merge(
                         Leads_gestionados[['sc_fecha', 'unique_id_count']], 
@@ -292,80 +300,36 @@ else:
                           Leads_valp[['sc_fecha', 'unique_id_count']], 
                           on='sc_fecha',
                           suffixes=('', '_VALP'))
-    
     chart_data = chart_data.rename(columns={'unique_id_count': 'VALP'})
-    
- 
+
     # Ordenar por fecha
     chart_data = chart_data.sort_values('sc_fecha')
     # Crear el gráfico de línea
-   
     st.markdown('<p style=" font-weight:bold;">Crecimiento de Conversión por Fecha</p>', unsafe_allow_html=True)
-
-
     st.line_chart(chart_data.set_index('sc_fecha'))
     
-    chart_data = pd.merge(chart_data, 
-                          Leads_gestion_diaria[['sc_fecha', 'unique_id_count']], 
-                          on='sc_fecha',
-                          suffixes=('', '_Leads_Tocados'))
-
-    chart_data = chart_data.rename(columns={'unique_id_count': 'Leads_Tocados'})
-    chart_data['Lead a Contacto'] = (chart_data['CONTACTOS'] / chart_data['Leads_Tocados']) * 100
-    chart_data['Contacto a VALP'] = (chart_data['VALP'] / chart_data['CONTACTOS']) * 100
-        # Formatear los valores al formato porcentaje (xx.xx%) en el DataFrame original
-    #chart_data['Lead a Contacto'] = chart_data['Lead a Contacto'].map("{:.2f}%".format)
-    #chart_data['Contacto a VALP'] = chart_data['Contacto a VALP'].map("{:.2f}%".format)
-            # Ordenar las columnas en el orden solicitado
-    chart_data = chart_data[['sc_fecha', 
-                            'Leads_Tocados', 
-                            'Leads_Asesor', 
-                            'CONTACTOS', 
-                            'VALP', 
-                            'Lead a Contacto', 
-                            'Contacto a VALP']]
-    chart_data = chart_data.set_index("sc_fecha")
     chart_data_dict = {
     'Métrica': ['Leads_Tocados', 'Leads_Asesor', 'CONTACTOS', 'VALP', 'Lead a Contacto', 'Contacto a VALP']
 }
 
     # Rellenar con datos desde los DataFrames originales
     for fecha in Leads_gestion_diaria['sc_fecha']:
+        
         # Obtener los valores correspondientes a cada métrica por fecha
         leads_tocados = Leads_gestion_diaria.loc[Leads_gestion_diaria['sc_fecha'] == fecha, 'unique_id_count'].sum()
         leads_asesor = Leads_gestionados.loc[Leads_gestionados['sc_fecha'] == fecha, 'unique_id_count'].sum()
         contactos = Leads_contactos.loc[Leads_contactos['sc_fecha'] == fecha, 'unique_id_count'].sum()
         valp = Leads_valp.loc[Leads_valp['sc_fecha'] == fecha, 'unique_id_count'].sum()
-
         # Calcular tasas de conversión
+        # Calcular tasas de conversión con validaciones
         lead_a_contacto = (contactos / leads_tocados) * 100 if leads_tocados > 0 else 0
-        contacto_a_valp = (valp / contactos) * 100 if contactos > 0 else 0
-
+        contacto_a_valp = (valp / contactos) * 100 if contactos > 0 and valp > 0 else 0
         # Agregar datos al diccionario
         chart_data_dict[fecha] = [leads_tocados, leads_asesor, contactos, valp, lead_a_contacto, contacto_a_valp]
-        
-    
+
+            
     # Convertir el diccionario en un DataFrame
     chart_data2 = pd.DataFrame(chart_data_dict).set_index('Métrica')
-    
-    
-    
-        
-
-def format_as_percentage(df, rows_to_format):
-    """
-    Formatea solo las filas especificadas como porcentaje con 2 decimales,
-    dejando las demás filas sin modificaciones.
-    """
-    for row_name in df.index:
-        if row_name in rows_to_format:
-            # Solo formateamos las filas seleccionadas como porcentaje
-            df.loc[row_name] = df.loc[row_name].apply(
-                lambda x: f"{x:.2f}%" if isinstance(x, (int, float)) and pd.notnull(x) else x
-            )
-        # Si no está en rows_to_format, no se hace nada con la fila
-        # No se cambia ni la conversión ni el formato de los otros valores
-    return df
 
 col1,col2=st.columns([1,3])
 with col1:
@@ -373,76 +337,53 @@ with col1:
     agrupacion_seleccionada = st.selectbox("Agrupar por", options=agrupaciones)
 with col2:
     st.write("")
-
-if not Leads_gestion_diaria.empty:
- 
-    # Convertir 'sc_fecha' a datetime para facilitar la agrupación (sin modificar permanentemente)
-    temp_chart_data = chart_data.reset_index()
-    temp_chart_data['sc_fecha_temp'] = pd.to_datetime(Leads_gestion_diaria['sc_fecha'], errors='coerce')
-    # Formatear la fecha para que muestre solo "Año-Mes-Día"
     
-    # Realizar la agrupación según la selección
-    if agrupacion_seleccionada == "Día":
-        temp_chart_data['Agrupacion'] = temp_chart_data['sc_fecha_temp'].dt.strftime('%Y-%m-%d')
-    elif agrupacion_seleccionada == "Semana":
-        temp_chart_data['Agrupacion'] = temp_chart_data['sc_fecha_temp'].dt.to_period('W').apply(lambda r: r.start_time.strftime('%Y-%m-%d'))
+# Convertir las fechas en las columnas a tipo datetime
+
+chart_data2.columns = pd.to_datetime(chart_data2.columns)
+
+
+def agrupar_por(fecha_df, agrupacion_seleccionada):
+    if agrupacion_seleccionada == "Semana":
+        # Agrupar por semana, obteniendo la fecha de inicio de la semana
+        fecha_df_grouped = fecha_df.groupby(fecha_df.columns.to_series().dt.to_period('W').apply(lambda r: r.start_time), axis=1).sum()
+        # Cambiar el índice de columnas para que muestre las fechas de inicio de semana
+        fecha_df_grouped.columns = fecha_df_grouped.columns.strftime('%Y-%m-%d')
+        return fecha_df_grouped
     elif agrupacion_seleccionada == "Mes":
-        temp_chart_data['Agrupacion'] = temp_chart_data['sc_fecha_temp'].dt.to_period('M').astype(str)
-    
-    # Agrupar por la columna seleccionada
-    agrupado = temp_chart_data.groupby('Agrupacion').sum(numeric_only=True)
-    
-    # Calcular las métricas de conversión si no es "Total"
-    agrupado['Lead a Contacto'] = (agrupado['CONTACTOS'] / agrupado['Leads_Tocados']) * 100
-    agrupado['Contacto a VALP'] = (agrupado['VALP'] / agrupado['CONTACTOS']) * 100
-    agrupado['Lead a Contacto'] = agrupado['Lead a Contacto'].map("{:.2f}%".format)
-    agrupado['Contacto a VALP'] = agrupado['Contacto a VALP'].map("{:.2f}%".format)
-    
-
-    agrupado2 = agrupado.transpose( )
-    st.markdown(f'<p style="color:#000066;font-weight:bold;">Métricas de Gestión - {agrupacion_seleccionada}</p>', unsafe_allow_html=True)
-
-
-    st.dataframe(agrupado2)
-
-        # Función para resaltar el color de las letras según las condiciones
-    def highlight_values_transposed(row):
-        styles = []
-        for value in row:
-            if isinstance(value, str) and '%' in value:  # Si el valor es un porcentaje
-                num = float(value.strip('%'))
-                if num > 10:
-                    styles.append('color: green;')
-                elif 5 <= num < 10:
-                    styles.append('color: orange;')
-                else:
-                    styles.append('color: red;')
+        # Agrupar por mes, obteniendo la fecha de inicio del mes
+        fecha_df_grouped = fecha_df.groupby(fecha_df.columns.to_series().dt.to_period('M').apply(lambda r: r.start_time), axis=1).sum()
+        # Cambiar el índice de columnas para que muestre las fechas de inicio del mes
+        fecha_df_grouped.columns = fecha_df_grouped.columns.strftime('%Y-%m-%d')
+        return fecha_df_grouped
+    else:  # Si es por Día
+        fecha_df.columns = fecha_df.columns.strftime('%Y-%m-%d')
+        return fecha_df
+# Aplicar la agrupación seleccionada
+chart_data_grouped = agrupar_por(chart_data2, agrupacion_seleccionada)
+        
+for col in chart_data_grouped.index:
+    if col in ['Lead a Contacto', 'Contacto a VALP']:  # Asumiendo que estas son las filas donde están los porcentajes
+        for fecha in chart_data_grouped.columns:
+            if chart_data_grouped.loc[col, fecha] > 0:  # Asegurar que el valor no sea 0 antes de formatearlo
+                    chart_data_grouped.loc[col, fecha] = "{:.1f}%".format(chart_data_grouped.loc[col, fecha])
             else:
-                styles.append('')  # Sin estilo
-        return styles
+                    chart_data_grouped.loc[col, fecha] = "0%"
+    else:
+        for fecha in chart_data_grouped.columns:
+            if chart_data_grouped.loc[col, fecha] > 0:  # Asegurar que el valor no sea 0 antes de formatearlo
+                chart_data_grouped.loc[col, fecha] = "{:.0f}".format(chart_data_grouped.loc[col, fecha])
+            else:
+                chart_data_grouped.loc[col, fecha] = "0"  # Si el valor es 0, lo dejamos como "0"
+# Mostrar el DataFrame agrupado
 
-    # Aplicar estilo al DataFrame transpuesto
-    styled_agrupado_t = agrupado2.style.apply(highlight_values_transposed, axis=1)
-    styled_html = styled_agrupado_t.to_html()
-
-    # Mostrar el DataFrame estilizado en Streamlit
-    st.markdown(
-    f"""
-    <div style="overflow-x:auto; width: 950px; border: 1px solid #ddd; padding: 2px;">
-        {styled_html}
-    """,
-    unsafe_allow_html=True
-    )
-
-
-else:
-    st.error("No se encontraron datos válidos para las condiciones proporcionadas.")
-
-
-
-
+st.markdown(f'<p style="color:#000066;font-weight:bold;">Métricas de Gestión - {agrupacion_seleccionada}</p>', unsafe_allow_html=True)
+st.dataframe(chart_data_grouped)
 
 st.markdown(f'<p style="color:#000066;font-weight:bold;">Métricas de Gestión COHORT </p>', unsafe_allow_html=True)
+
+
+
 
 df_cohort = filtered_df[filtered_df['flg_convocatoria'] == "Convo"].copy()
 
@@ -477,39 +418,53 @@ cohort_metrics = pd.DataFrame({
     'Contactados Cohort': contactados_cohort,
     'Val + Cohort': val_plus_cohort,
     'Pagante Cohort': pagante_cohort,
-    '% Contactados Cohort': pct_contactados.astype(str) + '%',
-    '% Contacto a Valp': pct_contacto_valp.astype(str) + '%',
-    '% lead a Valp': pct_lead_valp.astype(str) + '%',
-    '% Pagantes Cohort': pct_pagantes.astype(str) + '%'
+    '% Contactados Cohort': pct_contactados,
+    '% Contacto a Valp': pct_contacto_valp,
+    '% lead a Valp': pct_lead_valp,
+    '% Pagantes Cohort': pct_pagantes
 })
 
 # Transponer para que las fechas sean columnas
 cohort_metrics = cohort_metrics.T
 
-st.dataframe(cohort_metrics)
+cohort_metrics.columns = pd.to_datetime(cohort_metrics.columns, errors='coerce') 
+# Función para agrupar por semana o mes en el DataFrame de cohortes
+def agrupar_por_cohort(fecha_df, agrupacion_seleccionada):
+    fecha_df.columns = pd.to_datetime(fecha_df.columns, errors='coerce')
+    if agrupacion_seleccionada == "Semana":
+        # Agrupar por semana, obteniendo la fecha de inicio de la semana
+        fecha_df_grouped = fecha_df.groupby(fecha_df.columns.to_series().dt.to_period('W').apply(lambda r: r.start_time), axis=1).sum()
+        # Cambiar el índice de columnas para que muestre las fechas de inicio de semana
+        fecha_df_grouped.columns = fecha_df_grouped.columns.strftime('%Y-%m-%d')
+        return fecha_df_grouped
+    elif agrupacion_seleccionada == "Mes":
+        # Agrupar por mes, obteniendo la fecha de inicio del mes
+        fecha_df_grouped = fecha_df.groupby(fecha_df.columns.to_series().dt.to_period('M').apply(lambda r: r.start_time), axis=1).sum()
+        # Cambiar el índice de columnas para que muestre las fechas de inicio del mes
+        fecha_df_grouped.columns = fecha_df_grouped.columns.strftime('%Y-%m-%d')
+        return fecha_df_grouped
+    else:  # Si es por Día
+        fecha_df.columns = fecha_df.columns.strftime('%Y-%m-%d')
+        return fecha_df
 
-
-
-
-mundo_counts = df['MUNDO_CALCULADO'].value_counts().reset_index()
-mundo_counts.columns = ['MUNDO', 'COUNT']
-
-
-# Crear gráfico de pastel
-#fig = px.pie(
- #   mundo_counts, 
-  #  values='COUNT', 
-   # names='MUNDO', 
-    #title='Distribución de Mundos',
-    #color_discrete_sequence=px.colors.qualitative.Set3
-#)
-
-# Ajustar tamaño del gráfico
-#fig.update_layout(width=400, height=400)
-
-# Mostrar gráfico en Streamlit
-#st.plotly_chart(fig)
-
+# Aplicar la agrupación seleccionada a cohort_metrics
+cohort_metrics_grouped = agrupar_por_cohort(cohort_metrics, agrupacion_seleccionada)
+# Formatear los valores porcentuales y numéricos de la tabla resultante
+for col in cohort_metrics_grouped.index:
+    if col in ['% Contactados Cohort', '% Contacto a Valp', '% lead a Valp', '% Pagantes Cohort']:  # Asumiendo que estas son las filas donde están los porcentajes
+        for fecha in cohort_metrics_grouped.columns:
+            if cohort_metrics_grouped.loc[col, fecha] > 0:  # Asegurar que el valor no sea 0 antes de formatearlo
+                cohort_metrics_grouped.loc[col, fecha] = "{:.1f}%".format(cohort_metrics_grouped.loc[col, fecha])
+            else:
+                cohort_metrics_grouped.loc[col, fecha] = "0%"  # Si es 0, poner 0.00%
+    else:  # Para las filas de números que no son porcentajes
+        for fecha in cohort_metrics_grouped.columns:
+            if cohort_metrics_grouped.loc[col, fecha] > 0:  # Asegurar que el valor no sea 0 antes de formatearlo
+                cohort_metrics_grouped.loc[col, fecha] = "{:.0f}".format(cohort_metrics_grouped.loc[col, fecha])
+            else:
+                cohort_metrics_grouped.loc[col, fecha] = "0"  # Si el valor es 0, lo dejamos como "0"
+st.markdown(f'<p style="color:#000066;font-weight:bold;">Métricas de Cohort - {agrupacion_seleccionada}</p>', unsafe_allow_html=True)
+st.dataframe(cohort_metrics_grouped)
 
 
  #(df['fecha_registro_periodo'] >= pd.to_datetime(start_date)) &
