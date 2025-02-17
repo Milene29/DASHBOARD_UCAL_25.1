@@ -463,7 +463,7 @@ for col in cohort_metrics_grouped.index:
                 cohort_metrics_grouped.loc[col, fecha] = "{:.0f}".format(cohort_metrics_grouped.loc[col, fecha])
             else:
                 cohort_metrics_grouped.loc[col, fecha] = "0"  # Si el valor es 0, lo dejamos como "0"
-st.markdown(f'<p style="color:#000066;font-weight:bold;">Métricas de Cohort - {agrupacion_seleccionada}</p>', unsafe_allow_html=True)
+st.markdown(f'<p style="color:#000066;font-weight:bold;">Métricas de COHORT - {agrupacion_seleccionada}</p>', unsafe_allow_html=True)
 st.dataframe(cohort_metrics_grouped)
 
 
@@ -680,16 +680,7 @@ with col3:
                                    props='color: #990000;')
 
     st.dataframe(tabla_resultado)
-    
 
-
-
-
-
-
-
-
-# Crear DataFrame
 filtered_df3 = filtered_df
 
 # Definir los valores mínimos y máximos de las columnas
