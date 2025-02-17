@@ -372,17 +372,13 @@ for col in chart_data_grouped.index:
     else:
         for fecha in chart_data_grouped.columns:
             if chart_data_grouped.loc[col, fecha] > 0:  # Asegurar que el valor no sea 0 antes de formatearlo
-                chart_data_grouped.loc[col, fecha] = "{:.0f}".format(chart_data_grouped.loc[col, fecha])
+                chart_data_grouped.loc[col, fecha] = float("{:.0f}".format(chart_data_grouped.loc[col, fecha]))
             else:
                 chart_data_grouped.loc[col, fecha] = "0"  # Si el valor es 0, lo dejamos como "0"
 # Mostrar el DataFrame agrupado
 
 st.markdown(f'<p style="color:#000066;font-weight:bold;">Métricas de Gestión - {agrupacion_seleccionada}</p>', unsafe_allow_html=True)
 st.dataframe(chart_data_grouped)
-
-st.markdown(f'<p style="color:#000066;font-weight:bold;">Métricas de Gestión COHORT </p>', unsafe_allow_html=True)
-
-
 
 
 df_cohort = filtered_df[filtered_df['flg_convocatoria'] == "Convo"].copy()
