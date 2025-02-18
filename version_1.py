@@ -5,6 +5,7 @@ from st_aggrid import AgGrid, GridOptionsBuilder
 import plotly.express as px
 import funciones_generales as fg
 
+
 st.set_page_config(page_title="Streamlit Dashboard", layout="wide")
 @st.cache_data
 def load_data():
@@ -203,7 +204,21 @@ with st.sidebar:
      filtered_df_2 = filtered_df_2[filtered_df_2['flg_convocatoria'] == Convo_seleccionado]
      
 
+nombre_mapping = {
+    "Daniel Zapata": "DANIEL ENRIQUE",
+    "Rosa Ugarte": "ROSA NATALIA",
+    "César Alberto Loayza Gutiérrez": "CÉSAR ALBERTO",
+    "Andrea Araujo Antara": "ANDREA",
+    "Cinthia Mariella Orosco": "CINTHIA",
+    "Angelica Iparraguirre": "ANGELICA",
+    "Ingrid Guillermo Rivera": "INGRID",
+    "Fiorella Lanegra": "FIORELLA",
+    "Erwyn Terie Vital Avila": "ERWIN TERIE",
+    "Leandro Urbina": "LEANDRO",
+    "Juan Pablo Gómez": "JUAN"
+}
 
+data_pago['Asesor Homologado'] = data_pago['Asesor Homologado'].replace(nombre_mapping)
 
 min_fecha =  '2025-01-01'
 max_fecha = filtered_df_2['sc_fecha'].max()
@@ -227,15 +242,23 @@ filtered_df_2 = filtered_df_2[
         ]
 # Agrupar por 'sc_fecha' y contar los 'id_prometeo' únicos
 
-
+asesores_unicos = filtered_df_2[~filtered_df_2['nombre_asesor'].isin(['TI', 'STEFANO'])]['nombre_asesor'].unique()
+col1, col2 = st.columns([2, 3])
+with col1:
+    asesores_seleccionados = st.multiselect("Selecciona uno o más Asesores", options=asesores_unicos)
+    
+print(asesores_unicos)
 id_prometeo_fechas = filtered_df_2.groupby('sc_fecha')['id_prometeo'].nunique()
 # Convertir a DataFrame para mejor visualización
 Leads_gestion_diaria = id_prometeo_fechas.reset_index()
 Leads_gestion_diaria.columns = ['sc_fecha', 'unique_id_count']
 
-
 # Filtrar los datos para excluir al "TI" Integrador
 filtered_data = filtered_df_2[filtered_df_2['nombre_asesor'] != 'TI']
+if asesores_seleccionados:
+    filtered_data = filtered_df_2[filtered_df_2['nombre_asesor'].isin(asesores_seleccionados)]
+    data_pago= data_pago[data_pago['Asesor Homologado'].isin(asesores_seleccionados)]
+
 # Agrupar por 'nombre_asesor' y contar los 'id_prometeo' únicos por fecha
 Leads_gestionados = (
     filtered_data.groupby('sc_fecha')['id_prometeo']
@@ -248,8 +271,7 @@ Leads_gestionados.columns = ['sc_fecha','unique_id_count']
 
 
 
-filtered_data2= filtered_df_2[(filtered_df_2['desc_resultado_1'] != 'Sin contacto')  & 
-    (filtered_df_2['nombre_asesor'] != 'TI')]
+filtered_data2= filtered_data[(filtered_data['desc_resultado_1'] != 'Sin contacto')  ]
 
 Leads_contactos = (
     filtered_data2.groupby('sc_fecha')['id_prometeo']
@@ -261,10 +283,9 @@ Leads_contactos.columns = ['sc_fecha','unique_id_count']
 # Mostrar el resultado
 
 # Filtrar los datos según las condiciones proporcionadas
-filtered_data3 = filtered_df_2[
-    (filtered_df_2['desc_resultado_1'].isin(["Evaluando", "Interesado","Registrado a evento","Se inscribio","Promesa de pago","Registrado a evento"])) & 
-    (filtered_df_2['desc_resultado_1'] != 'Sin contacto') & 
-    (filtered_df_2['nombre_asesor'] != 'TI') 
+filtered_data3 = filtered_data[
+    (filtered_data['desc_resultado_1'].isin(["Evaluando", "Interesado","Registrado a evento","Se inscribio","Promesa de pago","Registrado a evento"])) & 
+    (filtered_data['desc_resultado_1'] != 'Sin contacto') 
 ]
 # Agrupar por 'sc_fecha' y contar los valores únicos de 'id_prometeo'
 Leads_valp = (
@@ -278,14 +299,30 @@ if '2025-02-09' not in Leads_valp['sc_fecha'].values:
     # Usar pd.concat() para agregar la nueva fecha al DataFrame original
     Leads_valp = pd.concat([Leads_valp, missing_date_df], ignore_index=True)
 
-# Ordenar el DataFrame por la fecha ('sc_fecha') de forma ascendente
-
 Leads_valp = Leads_valp.sort_values(by='sc_fecha').reset_index(drop=True)
 
+
+data_pago['Fecha de Pago de Boleta'] = pd.to_datetime(data_pago['Fecha de Pago de Boleta'], format="%d/%m/%Y", errors='coerce')
+
+data_pago['sc_fecha'] = data_pago['Fecha de Pago de Boleta'].dt.date
+
+Leads_pagos = (
+    data_pago.groupby('sc_fecha')['ID PROMETEO']
+    .nunique()
+    .reset_index(name='unique_id_count')  # Convertir a DataFrame y nombrar la columna
+)
+# Convertir a DataFrame con formato datetime.date
+fecha_completa = pd.date_range(start=rango_fechas[0], end=rango_fechas[1])
+fecha_completa_df = pd.DataFrame({'sc_fecha': fecha_completa.date})
+
+# Unir el DataFrame de pagos con el de todas las fechas
+Leads_pagos = fecha_completa_df.merge(Leads_pagos, on='sc_fecha', how='left')
+# Rellenar valores NaN con 0 (fechas sin pagos)
+Leads_pagos['unique_id_count'] = Leads_pagos['unique_id_count'].fillna(0).astype(int)
+Leads_pagos.columns = ['sc_fecha','unique_id_count']
 # Verificar si el DataFrame tiene datos válidos
 if Leads_gestion_diaria.empty:
     st.error("No se encontraron datos válidos para las condiciones proporcionadas.")
-
 else:
     chart_data = pd.merge(
                         Leads_gestionados[['sc_fecha', 'unique_id_count']], 
@@ -294,38 +331,42 @@ else:
                           suffixes=('_Leads_Asesor', '_CONTACTOS'))
     chart_data = chart_data.rename(columns={'unique_id_count_Leads_Asesor': 'Leads_Asesor', 
                                         'unique_id_count_CONTACTOS': 'CONTACTOS'})
-
-
     chart_data = pd.merge(chart_data, 
                           Leads_valp[['sc_fecha', 'unique_id_count']], 
                           on='sc_fecha',
                           suffixes=('', '_VALP'))
     chart_data = chart_data.rename(columns={'unique_id_count': 'VALP'})
-
-    # Ordenar por fecha
     chart_data = chart_data.sort_values('sc_fecha')
     # Crear el gráfico de línea
     st.markdown('<p style=" font-weight:bold;">Crecimiento de Conversión por Fecha</p>', unsafe_allow_html=True)
     st.line_chart(chart_data.set_index('sc_fecha'))
-    
     chart_data_dict = {
-    'Métrica': ['Leads_Tocados', 'Leads_Asesor', 'CONTACTOS', 'VALP', 'Lead a Contacto', 'Contacto a VALP']
+    'Métrica': ['Leads_Tocados', 'Leads_Asesor', 'CONTACTOS', 'VALP','Pagos','Lead a Contacto', 'Contacto a VALP']
 }
-
     # Rellenar con datos desde los DataFrames originales
+
+    Leads_gestion_diaria['sc_fecha'] = pd.to_datetime(Leads_gestion_diaria['sc_fecha'])
+    Leads_pagos['sc_fecha'] = pd.to_datetime(Leads_pagos['sc_fecha'])
+    Leads_gestionados['sc_fecha'] = pd.to_datetime(Leads_gestionados['sc_fecha'])
+    Leads_contactos['sc_fecha'] = pd.to_datetime(Leads_contactos['sc_fecha'])
+    Leads_valp['sc_fecha'] = pd.to_datetime(Leads_valp['sc_fecha'])
     for fecha in Leads_gestion_diaria['sc_fecha']:
-        
         # Obtener los valores correspondientes a cada métrica por fecha
         leads_tocados = Leads_gestion_diaria.loc[Leads_gestion_diaria['sc_fecha'] == fecha, 'unique_id_count'].sum()
         leads_asesor = Leads_gestionados.loc[Leads_gestionados['sc_fecha'] == fecha, 'unique_id_count'].sum()
         contactos = Leads_contactos.loc[Leads_contactos['sc_fecha'] == fecha, 'unique_id_count'].sum()
         valp = Leads_valp.loc[Leads_valp['sc_fecha'] == fecha, 'unique_id_count'].sum()
+        pagos = Leads_pagos.loc[Leads_pagos['sc_fecha'] == fecha, 'unique_id_count'].sum()
+
         # Calcular tasas de conversión
         # Calcular tasas de conversión con validaciones
         lead_a_contacto = (contactos / leads_tocados) * 100 if leads_tocados > 0 else 0
         contacto_a_valp = (valp / contactos) * 100 if contactos > 0 and valp > 0 else 0
+        
         # Agregar datos al diccionario
-        chart_data_dict[fecha] = [leads_tocados, leads_asesor, contactos, valp, lead_a_contacto, contacto_a_valp]
+        if fecha not in chart_data_dict:
+            chart_data_dict[fecha] = []
+        chart_data_dict[fecha].extend([leads_tocados, leads_asesor, contactos, valp, pagos, lead_a_contacto, contacto_a_valp])
 
             
     # Convertir el diccionario en un DataFrame
@@ -371,15 +412,20 @@ for col in chart_data_grouped.index:
                     chart_data_grouped.loc[col, fecha] = "0%"
     else:
         for fecha in chart_data_grouped.columns:
-            if chart_data_grouped.loc[col, fecha] > 0:  # Asegurar que el valor no sea 0 antes de formatearlo
-                chart_data_grouped.loc[col, fecha] = float("{:.0f}".format(chart_data_grouped.loc[col, fecha]))
-            else:
-                chart_data_grouped.loc[col, fecha] = "0"  # Si el valor es 0, lo dejamos como "0"
-# Mostrar el DataFrame agrupado
-
+            if chart_data_grouped.loc[col, fecha] >= 0:  # Asegurar que el valor no sea 0 antes de formatearlo
+                chart_data_grouped.loc[col, fecha] = "{:.0f}".format(chart_data_grouped.loc[col, fecha])
+            
 st.markdown(f'<p style="color:#000066;font-weight:bold;">Métricas de Gestión - {agrupacion_seleccionada}</p>', unsafe_allow_html=True)
 st.dataframe(chart_data_grouped)
 
+
+
+col1, col2 = st.columns([1, 3])
+with col1:
+    dias_madura = [0,1, 2, 3, 4, 5, 7, 10]  # Opciones en enteros
+    dias_select_madura = st.selectbox("Días de maduración", options=dias_madura)
+with col2:
+    st.write("")
 
 df_cohort = filtered_df[filtered_df['flg_convocatoria'] == "Convo"].copy()
 
@@ -387,19 +433,37 @@ df_cohort = filtered_df[filtered_df['flg_convocatoria'] == "Convo"].copy()
 df_cohort['fecha_primera_tipif'] = pd.to_datetime(df_cohort['fecha_primera_tipif'], errors='coerce').dt.date
 df_cohort['prim_tipif_dif_sin_contacto_fecha'] = pd.to_datetime(df_cohort['prim_tipif_dif_sin_contacto_fecha'], errors='coerce').dt.date
 df_cohort['fecha_primera_valp'] = pd.to_datetime(df_cohort['fecha_primera_valp'], errors='coerce').dt.date
-df_cohort['pagante_cohort'] = df_cohort['id_prometeo'].isin(data_pago['ID PROMETEO']).astype(int)
 
 # Filtrar desde el 1 de enero de 2025
 df_cohort = df_cohort[df_cohort['fecha_primera_tipif'] >= pd.to_datetime("2025-01-01").date()]
 
 # Crear columna Contactados Cohort con la condición dada
-df_cohort['contactado_cohort'] = (df_cohort['fecha_primera_tipif'] == df_cohort['prim_tipif_dif_sin_contacto_fecha']).astype(int)
+df_cohort['contactado_cohort_maduracion'] = (
+    (df_cohort['fecha_primera_tipif'] <= df_cohort['prim_tipif_dif_sin_contacto_fecha']) & 
+    (df_cohort['prim_tipif_dif_sin_contacto_fecha'] <= df_cohort['fecha_primera_tipif'] + pd.to_timedelta(dias_select_madura, unit="D"))
+).astype(int)
+
+df_cohort['val_plus_cohort_maduracion'] = (
+    (df_cohort['fecha_primera_tipif'] <= df_cohort['fecha_primera_valp']) & 
+    (df_cohort['fecha_primera_valp'] <= df_cohort['fecha_primera_tipif'] + pd.to_timedelta(dias_select_madura, unit="D"))
+).astype(int)
+
 df_cohort['val_plus_cohort'] = (df_cohort['fecha_primera_tipif'] == df_cohort['fecha_primera_valp']).astype(int)
 
+# Filtrar IDs de contactados
+contactados_ids = df_cohort.loc[df_cohort['contactado_cohort_maduracion'] == 1, 'id_prometeo']
+
+# Verificar si estos IDs están en la base de pagos
+df_cohort['pagante_cohort'] = df_cohort['id_prometeo'].isin(contactados_ids) & df_cohort['id_prometeo'].isin(data_pago['ID PROMETEO'])
+
+# Convertir a 1 o 0
+df_cohort['pagante_cohort'] = df_cohort['pagante_cohort'].astype(int)
 # Calcular métricas
 leads_cohort = df_cohort.groupby('fecha_primera_tipif')['id_prometeo'].count()
-contactados_cohort = df_cohort.groupby('fecha_primera_tipif')['contactado_cohort'].sum()
-val_plus_cohort = df_cohort.groupby('fecha_primera_tipif')['val_plus_cohort'].sum()
+
+contactados_cohort = df_cohort.groupby('fecha_primera_tipif')['contactado_cohort_maduracion'].sum()
+
+val_plus_cohort = df_cohort.groupby('fecha_primera_tipif')['val_plus_cohort_maduracion'].sum()
 pagante_cohort = df_cohort.groupby('fecha_primera_tipif')['pagante_cohort'].sum()
 
 # Calcular las métricas porcentuales
@@ -455,10 +519,9 @@ for col in cohort_metrics_grouped.index:
                 cohort_metrics_grouped.loc[col, fecha] = "0%"  # Si es 0, poner 0.00%
     else:  # Para las filas de números que no son porcentajes
         for fecha in cohort_metrics_grouped.columns:
-            if cohort_metrics_grouped.loc[col, fecha] > 0:  # Asegurar que el valor no sea 0 antes de formatearlo
-                cohort_metrics_grouped.loc[col, fecha] = "{:.0f}".format(cohort_metrics_grouped.loc[col, fecha])
-            else:
-                cohort_metrics_grouped.loc[col, fecha] = "0"  # Si el valor es 0, lo dejamos como "0"
+            if cohort_metrics_grouped.loc[col, fecha] >= 0:  # Asegurar que el valor no sea 0 antes de formatearlo
+                cohort_metrics_grouped.loc[col, fecha] = int(cohort_metrics_grouped.loc[col, fecha])
+
 st.markdown(f'<p style="color:#000066;font-weight:bold;">Métricas de COHORT - {agrupacion_seleccionada}</p>', unsafe_allow_html=True)
 st.dataframe(cohort_metrics_grouped)
 
