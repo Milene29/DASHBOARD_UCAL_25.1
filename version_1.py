@@ -103,7 +103,7 @@ data2['ult_programa_interes'] = data2['ult_programa_interes'].fillna('SIN CARRER
 df['MUNDO_CALCULADO'] = df['ult_programa_interes'].apply(clasificar_mundo)
 data2['MUNDO_CALCULADO'] = data2['ult_programa_interes'].apply(clasificar_mundo)
 
-df['flg_traslados'] = df['flg_traslados'].replace({0: 'Nuevo', 1: 'Traslado'})
+df['flg_traslados'] = df['flg_traslados'].replace({0: 'NUEVO', 1: 'TRASLADO'})
 
 df['flg_convocatoria'] = df['flg_convocatoria'].replace({0: 'No Convo', 1: 'Convo'})
 data2['flg_convocatoria'] = data2['flg_convocatoria'].replace({'0': 'No Convo', '1': 'Convo'})
@@ -120,16 +120,18 @@ with st.sidebar:
     # Filtro de carreras dinámico según el mundo seleccionado
     if mundo_seleccionado == "TODAS LAS CARRERAS":
         carreras_disponibles = df['ult_programa_interes'].dropna().unique()
-        carreras_disponibles = data2['ult_programa_interes'].dropna().unique()
+        carreras_disponibles = [carrera for carrera in carreras_disponibles if carrera != "SIN CARRERA"]
+
+        carreras_disponibles2 = data2['ult_programa_interes'].dropna().unique()
         carrera_seleccionada = st.selectbox("Selecciona una carrera",options=["Todas"] + list(carreras_disponibles))
 
     elif mundo_seleccionado != "SIN CARRERA":
         carreras_disponibles = df[df['MUNDO_CALCULADO'] == mundo_seleccionado]['ult_programa_interes'].dropna().unique()
-        carreras_disponibles = data2[data2['MUNDO_CALCULADO'] == mundo_seleccionado]['ult_programa_interes'].dropna().unique()
+        carreras_disponibles2 = data2[data2['MUNDO_CALCULADO'] == mundo_seleccionado]['ult_programa_interes'].dropna().unique()
         carrera_seleccionada = st.selectbox("Selecciona una carrera",options=["Todas"] + list(carreras_disponibles))
-
     else:
-        carrera_seleccionada = None
+        
+        carrera_seleccionada = st.selectbox("Selecciona una carrera",options=["SIN CARRERA"] )
 
 filtered_df = df.copy()
 filtered_df_2 = data2.copy()
@@ -144,7 +146,8 @@ if carrera_seleccionada != "Todas":
     filtered_df_2 = data2[(data2['MUNDO_CALCULADO'] == mundo_seleccionado) & (data2['ult_programa_interes'] == carrera_seleccionada) ]
 
 if mundo_seleccionado == "SIN CARRERA":
-    filtered_df, filtered_df_2 = map(lambda d: d[d['MUNDO_CALCULADO'] == "SIN CARRERA"], [df, data2])
+    filtered_df = df[(df['MUNDO_CALCULADO'] == mundo_seleccionado)& (df['ult_programa_interes'] == "SIN CARRERA")]
+    filtered_df2 = data2[(data2['MUNDO_CALCULADO'] == mundo_seleccionado)& (data2['ult_programa_interes'] == "SIN CARRERA")]
 
 # Mostrar resultados filtrados
 with st.sidebar:
@@ -168,9 +171,9 @@ with st.sidebar:
         # Filtrar por el canal seleccionado
      filtered_df = filtered_df[filtered_df['flg_traslados'] == tipo_select]
      # Filtrar los IDs con flg_traslados = 1
-     traslados_ids = filtered_df[filtered_df['flg_traslados'] == tipo_select]
-     filtered_df_2 = filtered_df_2[filtered_df_2['id_prometeo'].isin(traslados_ids)]
-    
+
+     data_pago=data_pago[data_pago['Tipo de Ingreso']== tipo_select]
+
  
 
     modalidad =["Todos"] + filtered_df['modalidad_programa'].unique().tolist()
@@ -179,13 +182,15 @@ with st.sidebar:
         # Filtrar por el canal seleccionado
      filtered_df = filtered_df[filtered_df['modalidad_programa'] == moda_selec]
      filtered_df_2 = filtered_df_2[filtered_df_2['modalidad_programa'] == moda_selec]
+     
     
-    canales_disponibles =["Todos"] + filtered_df['canal_atribucion'].unique().tolist()
-    canal_seleccionado= st.selectbox("Canal", options=canales_disponibles)
-    if canal_seleccionado != "Todos":
-        # Filtrar por el canal seleccionado
-     filtered_df = filtered_df[filtered_df['canal_atribucion'] == canal_seleccionado]
-     filtered_df_2 = filtered_df_2[filtered_df_2['canal_atribucion'] == canal_seleccionado]
+    canales_disponibles =filtered_df['canal_atribucion'].unique().tolist()
+    canales_seleccionados = st.multiselect("Canal", options=canales_disponibles,placeholder="Selecciona uno o varios canales...")
+    # Filtrar los datos según la selección
+    if canales_seleccionados:
+        filtered_df = filtered_df[filtered_df['canal_atribucion'].isin(canales_seleccionados)]
+        filtered_df_2 = filtered_df_2[filtered_df_2['canal_atribucion'].isin(canales_seleccionados)]
+        data_pago=data_pago[data_pago['CANAL'].isin(canales_seleccionados)]
      
      
     subcanales_disponibles =["Todos"] + filtered_df['subcanal'].unique().tolist()
@@ -199,7 +204,6 @@ with st.sidebar:
     Convo =["Todos"] + filtered_df['flg_convocatoria'].unique().tolist()
     Convo_seleccionado= st.selectbox("Convo", options=Convo)
     if Convo_seleccionado != "Todos":
-        # Filtrar por el canal seleccionado
      filtered_df = filtered_df[filtered_df['flg_convocatoria'] == Convo_seleccionado]
      filtered_df_2 = filtered_df_2[filtered_df_2['flg_convocatoria'] == Convo_seleccionado]
      
@@ -220,33 +224,39 @@ nombre_mapping = {
 
 data_pago['Asesor Homologado'] = data_pago['Asesor Homologado'].replace(nombre_mapping)
 
-min_fecha =  '2025-01-01'
-max_fecha = filtered_df_2['sc_fecha'].max()
+try:
+    min_fecha =  '2025-01-01'
+    max_fecha = filtered_df_2['sc_fecha'].max()
 
-with col2:
-    rango_fechas = st.date_input(
-                "Selecciona el rango de fechas",
-                value=(pd.to_datetime(min_fecha).date(), pd.to_datetime(max_fecha).date()),  # Convertir str a datetime.date
-                help="Selecciona las fechas para filtrar los datos de conversión ."
+    with col2:
+        rango_fechas = st.date_input(
+                    "Selecciona el rango de fechas",
+                    value=(pd.to_datetime(min_fecha).date(), pd.to_datetime(max_fecha).date()),  # Convertir str a datetime.date
+                    help="Selecciona las fechas para filtrar los datos de conversión ."
+                )
+
+        
+    rango_fechas_str = (
+                rango_fechas[0].strftime("%Y-%m-%d"),
+                rango_fechas[1].strftime("%Y-%m-%d")
             )
 
-    
-rango_fechas_str = (
-            rango_fechas[0].strftime("%Y-%m-%d"),
-            rango_fechas[1].strftime("%Y-%m-%d")
-        )
-
-filtered_df_2 = filtered_df_2[
-            (filtered_df_2['sc_fecha'] >= rango_fechas_str[0]) &
-            (filtered_df_2['sc_fecha'] <= rango_fechas_str[1])
-        ]
+    filtered_df_2 = filtered_df_2[
+                (filtered_df_2['sc_fecha'] >= rango_fechas_str[0]) &
+                (filtered_df_2['sc_fecha'] <= rango_fechas_str[1])
+            ]
+except Exception as e:
+    st.error(f"Ocurrió un error al procesar las fechas: {e}")
 # Agrupar por 'sc_fecha' y contar los 'id_prometeo' únicos
 
 asesores_unicos = filtered_df_2[~filtered_df_2['nombre_asesor'].isin(['TI', 'STEFANO'])]['nombre_asesor'].unique()
-col1, col2 = st.columns([2, 3])
+
+col1,col2=st.columns([1,3])
 with col1:
+    agrupaciones = ["Día", "Semana", "Mes"]
+    agrupacion_seleccionada = st.selectbox("Agrupar por", options=agrupaciones)
+with col2:
     asesores_seleccionados = st.multiselect("Selecciona uno o más Asesores", options=asesores_unicos)
-    
 print(asesores_unicos)
 id_prometeo_fechas = filtered_df_2.groupby('sc_fecha')['id_prometeo'].nunique()
 # Convertir a DataFrame para mejor visualización
@@ -324,24 +334,11 @@ Leads_pagos.columns = ['sc_fecha','unique_id_count']
 if Leads_gestion_diaria.empty:
     st.error("No se encontraron datos válidos para las condiciones proporcionadas.")
 else:
-    chart_data = pd.merge(
-                        Leads_gestionados[['sc_fecha', 'unique_id_count']], 
-                          Leads_contactos[['sc_fecha', 'unique_id_count']], 
-                          on='sc_fecha', 
-                          suffixes=('_Leads_Asesor', '_CONTACTOS'))
-    chart_data = chart_data.rename(columns={'unique_id_count_Leads_Asesor': 'Leads_Asesor', 
-                                        'unique_id_count_CONTACTOS': 'CONTACTOS'})
-    chart_data = pd.merge(chart_data, 
-                          Leads_valp[['sc_fecha', 'unique_id_count']], 
-                          on='sc_fecha',
-                          suffixes=('', '_VALP'))
-    chart_data = chart_data.rename(columns={'unique_id_count': 'VALP'})
-    chart_data = chart_data.sort_values('sc_fecha')
-    # Crear el gráfico de línea
-    st.markdown('<p style=" font-weight:bold;">Crecimiento de Conversión por Fecha</p>', unsafe_allow_html=True)
-    st.line_chart(chart_data.set_index('sc_fecha'))
     chart_data_dict = {
-    'Métrica': ['Leads_Tocados', 'Leads_Asesor', 'CONTACTOS', 'VALP','Pagos','Lead a Contacto', 'Contacto a VALP']
+    'Métrica': [ 'Gestion_Asesor', 'CONTACTOS', 'VALP','PAGOS', '%Gestión a VALP','%VALP a Pago','%Gestión a Pago']
+}
+    chart_data_dict2 = {
+    'Métrica': ['%Contacto','%Contacto a VALP','%lead a VALP']
 }
     # Rellenar con datos desde los DataFrames originales
 
@@ -361,25 +358,30 @@ else:
         # Calcular tasas de conversión
         # Calcular tasas de conversión con validaciones
         lead_a_contacto = (contactos / leads_tocados) * 100 if leads_tocados > 0 else 0
-        contacto_a_valp = (valp / contactos) * 100 if contactos > 0 and valp > 0 else 0
+        contacto_a_valp = ( valp/ contactos) * 100 if contactos > 0 and valp > 0 else 0
+        lead_a_valp=(valp / leads_tocados) * 100 if leads_tocados > 0 and valp > 0 else 0
+        
+        asesor_a_valp = (valp / leads_asesor) * 100 if leads_asesor > 0 and valp > 0 else 0
+        valp_a_venta=(pagos/valp)* 100 if valp > 0 and pagos > 0 else 0
+        gest_a_pago=(pagos/leads_asesor)* 100 if valp > 0 and pagos > 0 else 0
         
         # Agregar datos al diccionario
         if fecha not in chart_data_dict:
             chart_data_dict[fecha] = []
-        chart_data_dict[fecha].extend([leads_tocados, leads_asesor, contactos, valp, pagos, lead_a_contacto, contacto_a_valp])
+            chart_data_dict2[fecha] = []
+        chart_data_dict[fecha].extend([ leads_asesor, contactos, valp, pagos, asesor_a_valp,valp_a_venta,gest_a_pago])
+        chart_data_dict2[fecha].extend([lead_a_contacto, contacto_a_valp, lead_a_valp])
 
             
     # Convertir el diccionario en un DataFrame
     chart_data2 = pd.DataFrame(chart_data_dict).set_index('Métrica')
+    chart_data3 = pd.DataFrame(chart_data_dict2).set_index('Métrica')
 
-col1,col2=st.columns([1,3])
-with col1:
-    agrupaciones = ["Día", "Semana", "Mes"]
-    agrupacion_seleccionada = st.selectbox("Agrupar por", options=agrupaciones)
-with col2:
-    st.write("")
-    
-# Convertir las fechas en las columnas a tipo datetime
+chart_data1 = chart_data3.loc[['%Contacto','%Contacto a VALP','%lead a VALP']].T
+# Convertir índice a tipo datetime si no lo está
+chart_data1.index = pd.to_datetime(chart_data1.index)
+
+chart_data1 = chart_data1[~chart_data1.index.dayofweek.isin([5, 6])]
 
 chart_data2.columns = pd.to_datetime(chart_data2.columns)
 
@@ -404,7 +406,7 @@ def agrupar_por(fecha_df, agrupacion_seleccionada):
 chart_data_grouped = agrupar_por(chart_data2, agrupacion_seleccionada)
         
 for col in chart_data_grouped.index:
-    if col in ['Lead a Contacto', 'Contacto a VALP']:  # Asumiendo que estas son las filas donde están los porcentajes
+    if col in [ '%Gestión a VALP','%VALP a Pago','%Gestión a Pago']:  # Asumiendo que estas son las filas donde están los porcentajes
         for fecha in chart_data_grouped.columns:
             if chart_data_grouped.loc[col, fecha] > 0:  # Asegurar que el valor no sea 0 antes de formatearlo
                     chart_data_grouped.loc[col, fecha] = "{:.1f}%".format(chart_data_grouped.loc[col, fecha])
@@ -415,11 +417,12 @@ for col in chart_data_grouped.index:
             if chart_data_grouped.loc[col, fecha] >= 0:  # Asegurar que el valor no sea 0 antes de formatearlo
                 chart_data_grouped.loc[col, fecha] = "{:.0f}".format(chart_data_grouped.loc[col, fecha])
             
-st.markdown(f'<p style="color:#000066;font-weight:bold;">Métricas de Gestión - {agrupacion_seleccionada}</p>', unsafe_allow_html=True)
+st.markdown(f'<h5 style="color:#01579b;font-weight:bold;">Métricas de Gestión - {agrupacion_seleccionada}</h5>', unsafe_allow_html=True)
 st.dataframe(chart_data_grouped)
+st.markdown('<p style="font-weight:bold;">Crecimiento de GESTIÓN por Fechas</p>', unsafe_allow_html=True)
+st.line_chart(chart_data1)
 
-
-
+st.markdown(f'<h5 style="color:#01579b;font-weight:bold;">Métricas de COHORT - {agrupacion_seleccionada}</h5>', unsafe_allow_html=True)
 col1, col2 = st.columns([1, 3])
 with col1:
     dias_madura = [0,1, 2, 3, 4, 5, 7, 10]  # Opciones en enteros
@@ -428,16 +431,16 @@ with col2:
     st.write("")
 
 df_cohort = filtered_df[filtered_df['flg_convocatoria'] == "Convo"].copy()
+fecha_inicio = pd.to_datetime(rango_fechas[0]).date()
+fecha_fin = pd.to_datetime(rango_fechas[1]).date()
 
-# Convertir la columna de fecha a tipo datetime
 df_cohort['fecha_primera_tipif'] = pd.to_datetime(df_cohort['fecha_primera_tipif'], errors='coerce').dt.date
 df_cohort['prim_tipif_dif_sin_contacto_fecha'] = pd.to_datetime(df_cohort['prim_tipif_dif_sin_contacto_fecha'], errors='coerce').dt.date
 df_cohort['fecha_primera_valp'] = pd.to_datetime(df_cohort['fecha_primera_valp'], errors='coerce').dt.date
-
-# Filtrar desde el 1 de enero de 2025
-df_cohort = df_cohort[df_cohort['fecha_primera_tipif'] >= pd.to_datetime("2025-01-01").date()]
-
-# Crear columna Contactados Cohort con la condición dada
+df_cohort = df_cohort[
+    (df_cohort['fecha_primera_tipif'] >= fecha_inicio) &
+    (df_cohort['fecha_primera_tipif'] <= fecha_fin)
+]
 df_cohort['contactado_cohort_maduracion'] = (
     (df_cohort['fecha_primera_tipif'] <= df_cohort['prim_tipif_dif_sin_contacto_fecha']) & 
     (df_cohort['prim_tipif_dif_sin_contacto_fecha'] <= df_cohort['fecha_primera_tipif'] + pd.to_timedelta(dias_select_madura, unit="D"))
@@ -447,10 +450,7 @@ df_cohort['val_plus_cohort_maduracion'] = (
     (df_cohort['fecha_primera_tipif'] <= df_cohort['fecha_primera_valp']) & 
     (df_cohort['fecha_primera_valp'] <= df_cohort['fecha_primera_tipif'] + pd.to_timedelta(dias_select_madura, unit="D"))
 ).astype(int)
-
 df_cohort['val_plus_cohort'] = (df_cohort['fecha_primera_tipif'] == df_cohort['fecha_primera_valp']).astype(int)
-
-# Filtrar IDs de contactados
 contactados_ids = df_cohort.loc[df_cohort['contactado_cohort_maduracion'] == 1, 'id_prometeo']
 
 # Verificar si estos IDs están en la base de pagos
@@ -460,18 +460,14 @@ df_cohort['pagante_cohort'] = df_cohort['id_prometeo'].isin(contactados_ids) & d
 df_cohort['pagante_cohort'] = df_cohort['pagante_cohort'].astype(int)
 # Calcular métricas
 leads_cohort = df_cohort.groupby('fecha_primera_tipif')['id_prometeo'].count()
-
 contactados_cohort = df_cohort.groupby('fecha_primera_tipif')['contactado_cohort_maduracion'].sum()
-
 val_plus_cohort = df_cohort.groupby('fecha_primera_tipif')['val_plus_cohort_maduracion'].sum()
 pagante_cohort = df_cohort.groupby('fecha_primera_tipif')['pagante_cohort'].sum()
-
 # Calcular las métricas porcentuales
 pct_contactados = (contactados_cohort / leads_cohort * 100).fillna(0).astype(int)
 pct_contacto_valp = (val_plus_cohort / contactados_cohort * 100).fillna(0).astype(int)
 pct_lead_valp = (val_plus_cohort / leads_cohort * 100).fillna(0).astype(int)
 pct_pagantes = ((pagante_cohort / contactados_cohort) * 100).replace([float('inf'), -float('inf')], 0).fillna(0).astype(int)
-
 # Crear DataFrame final
 cohort_metrics = pd.DataFrame({
     'Leads Cohort': leads_cohort,
@@ -486,6 +482,10 @@ cohort_metrics = pd.DataFrame({
 
 # Transponer para que las fechas sean columnas
 cohort_metrics = cohort_metrics.T
+chart_data = cohort_metrics.loc[['% Contactados Cohort', '% Contacto a Valp', '% lead a Valp']].T
+chart_data.index = pd.to_datetime(chart_data.index)
+
+chart_data = chart_data[~chart_data.index.dayofweek.isin([5, 6])]
 
 cohort_metrics.columns = pd.to_datetime(cohort_metrics.columns, errors='coerce') 
 # Función para agrupar por semana o mes en el DataFrame de cohortes
@@ -522,9 +522,11 @@ for col in cohort_metrics_grouped.index:
             if cohort_metrics_grouped.loc[col, fecha] >= 0:  # Asegurar que el valor no sea 0 antes de formatearlo
                 cohort_metrics_grouped.loc[col, fecha] = int(cohort_metrics_grouped.loc[col, fecha])
 
-st.markdown(f'<p style="color:#000066;font-weight:bold;">Métricas de COHORT - {agrupacion_seleccionada}</p>', unsafe_allow_html=True)
+
 st.dataframe(cohort_metrics_grouped)
 
+st.markdown('<p style="font-weight:bold;">Crecimiento de GESTIÓN COHORT por Fechas</p>', unsafe_allow_html=True)
+st.line_chart(chart_data)
 
  #(df['fecha_registro_periodo'] >= pd.to_datetime(start_date)) &
  #(df['fecha_registro_periodo'] <= pd.to_datetime(end_date))
@@ -566,13 +568,10 @@ with col2:
      #Contar la cantidad de leads por ID
      convo = filtered_df[filtered_df['flg_convocatoria'] == 'Convo']['id_prometeo'].nunique()
      st.metric("Convo", format_with_commas(convo))
-
 with col3:
     # Contar la cantidad de leads sin contacto
     sin_contacto = filtered_df[filtered_df['agrupacion_tipificacion_actual'] == "VALORES_SIN_CONTACTO"]['id_prometeo'].nunique()
     st.metric("Sin Contacto", format_with_commas(sin_contacto))
-
-
 with col4:
     # Contar la cantidad de leads volver a llamar
     valp_condition = (
@@ -582,8 +581,6 @@ with col4:
     # Contar la cantidad de leads valp
     leads_vll = filtered_df[valp_condition]['id_prometeo'].nunique()
     st.metric("Volver a llamar", format_with_commas(leads_vll))
-
-
 with col5:
     # Contar la cantidad de leads valp
     valp_condition = (
@@ -594,8 +591,6 @@ with col5:
     # Contar la cantidad de leads valp
     leads_valp = filtered_df[valp_condition]['id_prometeo'].nunique()
     st.metric("Valp", format_with_commas(leads_valp))
-
-
 with col6:
     # Contar la cantidad de leads PP
     leads_pp = filtered_df[filtered_df['agrupacion_tipificacion_actual'] == "VALORES_PROMESA_DE_PAGO"]['id_prometeo'].nunique()
@@ -774,16 +769,11 @@ tabla = tabla.reset_index()
 # Mostrar la tabla en Streamlit
 st.markdown('<h5 style="color:#003399;">Perdidos / Días sin contacto</h5>', unsafe_allow_html=True)
 
-
-# Configuración de la tabla
 gb = GridOptionsBuilder.from_dataframe(tabla)
 gb.configure_side_bar()
 gb.configure_column("ult_tipf_dif_sin_contacto_2", header_name="TIPIFICACION 2🔹", cellStyle={'fontWeight': 'bold'})  
 gb.configure_default_column(groupable=True, value=True, enableRowGroup=True, editable=True) 
 grid_options = gb.build()
-
-
-#st.dataframe(tabla)
 
 col1,col2=st.columns([3, 2])
 with col1:
@@ -791,35 +781,21 @@ with col1:
 
 with col2:  
     st.write("")
-    
-    # Crear DataFrame
     filtered_df4 = filtered_df
-
-    # Definir los valores mínimos y máximos de las columnas
     min_dsnc = filtered_df4['dias_sin_contacto'].min()
     max_dsnc = filtered_df4['dias_sin_contacto'].max()
-
-    # Lista de límites superiores para los rangos de cada columna
-
     bins_dsnc = [min_dsnc, 7, 14, 21, 30, max_dsnc]  # Definido manualmente
-
-    # Generar etiquetas basadas en los límites de los rangos
-
     labels_dsnc = [f"{bins_dsnc[i]}-{bins_dsnc[i+1]-1}" 
                         for i in range(len(bins_dsnc) - 1)]
 
     # Filtrar los datos donde 'ult_tipf_dif_sin_contacto' es igual a "Perdido"
     filtered_df4_pp = filtered_df4[filtered_df4['agrupacion_tipificacion_actual'] == "VALORES_PROMESA_DE_PAGO"]
     filtered_df4_pp.loc[:, 'agrupacion_tipificacion_actual'] = filtered_df4_pp['agrupacion_tipificacion_actual'].replace("VALORES_PROMESA_DE_PAGO", "PP")
-    
-
-    # Obtener los valores únicos de 'ult_tipf_dif_sin_contacto_2' solo para los casos "Perdido"
+ # Obtener los valores únicos de 'ult_tipf_dif_sin_contacto_2' solo para los casos "Perdido"
     filtered_df4_pp = filtered_df4_pp.copy()
     filtered_df4_pp.loc[:, 'dsnc'] = pd.cut(filtered_df4_pp.loc[:, 'dias_sin_contacto'], bins=bins_dsnc, labels=labels_dsnc, right=False)
-
     # Crear la tabla dinámica con pivot_table
     tabla = pd.pivot_table(filtered_df4_pp, index='agrupacion_tipificacion_actual', columns='dsnc', aggfunc='size', fill_value=0, observed=False)
-
     tabla['Total'] = tabla.sum(axis=1)
     # Restablecer el índice para que sea visible en AgGrid
     tabla = tabla.rename_axis("📌 Tipificación").reset_index()
@@ -828,8 +804,6 @@ with col2:
     # Configuración de la tabla
     
     st.dataframe(tabla,hide_index=True)
-
-
 col1,col2=st.columns(2)
 with col1:
 
@@ -967,7 +941,7 @@ with col1:
     gb = GridOptionsBuilder.from_dataframe(tabla)
     gb.configure_side_bar()
     # Aplicar estilo al índice (columna "ID")
-    gb.configure_column("cantidad_tipificaciones", header_name="TIPIFICACIONES 🔹", cellStyle={'fontWeight': 'bold'})  
+    gb.configure_column("cantidad_tipificaciones", header_name="Toques 🔹", cellStyle={'fontWeight': 'bold'})  
     gb.configure_default_column(groupable=True, value=True, enableRowGroup=True, editable=True)
     grid_options = gb.build()
     
