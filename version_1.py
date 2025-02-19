@@ -4,10 +4,6 @@ import io
 from st_aggrid import AgGrid, GridOptionsBuilder
 import plotly.express as px
 import funciones_generales as fg
-import warnings
-
-warnings.simplefilter("ignore")
-pd.options.mode.chained_assignment = None  # Ignorar warnings de pandas
 
 st.set_page_config(page_title="Streamlit Dashboard", layout="wide")
 @st.cache_data
