@@ -4,6 +4,7 @@ import io
 from st_aggrid import AgGrid, GridOptionsBuilder
 import plotly.express as px
 import funciones_generales as fg
+import warnings
 
 
 st.set_page_config(page_title="Streamlit Dashboard", layout="wide")
@@ -400,6 +401,8 @@ chart_data3 = chart_data3[~chart_data3.index.dayofweek.isin([5, 6])]
 
 
 chart_data2.columns = pd.to_datetime(chart_data2.columns)
+warnings.simplefilter("ignore")
+pd.options.mode.chained_assignment = None  # Ignorar warnings de pandas
 
 
 def agrupar_por(fecha_df, agrupacion_seleccionada):
@@ -540,12 +543,11 @@ for col in cohort_metrics_grouped.index:
                 cohort_metrics_grouped.loc[col, fecha] = "{:.1f}%".format(cohort_metrics_grouped.loc[col, fecha])
             else:
                 cohort_metrics_grouped.loc[col, fecha] = "0%"  # Si es 0, poner 0.00%
+
     else:  # Para las filas de números que no son porcentajes
         for fecha in cohort_metrics_grouped.columns:
             if cohort_metrics_grouped.loc[col, fecha] >= 0:  # Asegurar que el valor no sea 0 antes de formatearlo
                 cohort_metrics_grouped.loc[col, fecha] = int(cohort_metrics_grouped.loc[col, fecha])
-
-
 st.dataframe(cohort_metrics_grouped)
 
 st.markdown('<p style="font-weight:bold;">Crecimiento de GESTIÓN COHORT por Fechas</p>', unsafe_allow_html=True)
