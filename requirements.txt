@@ -15,4 +15,3 @@ openpyxl
 seaborn
 plotly
 streamlit-aggrid==1.1.0
-warnings
