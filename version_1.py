@@ -256,7 +256,19 @@ with col1:
     agrupaciones = ["Día", "Semana", "Mes"]
     agrupacion_seleccionada = st.selectbox("Agrupar por", options=agrupaciones)
 with col2:
+    st.write("")
+
+            
+st.markdown(f'<h5 style="color:#01579b;font-weight:bold;">Métricas de Gestión - {agrupacion_seleccionada}</h5>', unsafe_allow_html=True)
+
+
+col1,col2=st.columns([1,3])
+with col1:
     asesores_seleccionados = st.multiselect("Selecciona uno o más Asesores", options=asesores_unicos)
+with col2:
+    st.write("")
+
+
 print(asesores_unicos)
 id_prometeo_fechas = filtered_df_2.groupby('sc_fecha')['id_prometeo'].nunique()
 # Convertir a DataFrame para mejor visualización
@@ -335,10 +347,10 @@ if Leads_gestion_diaria.empty:
     st.error("No se encontraron datos válidos para las condiciones proporcionadas.")
 else:
     chart_data_dict = {
-    'Métrica': [ 'Gestion_Asesor', 'CONTACTOS', 'VALP','PAGOS', '%Gestión a VALP','%VALP a Pago','%Gestión a Pago']
+    'Métrica': [ 'Gestion Asesor', 'Contacto', 'Valp','Pagos', '%Gestión a Valp','%Valp a Pago','%Gestión a Pago']
 }
     chart_data_dict2 = {
-    'Métrica': ['%Contacto','%Contacto a VALP','%lead a VALP']
+    'Métrica': ['%Gestión a VALP','%Contacto a Valp','%Valp a Pago','%Gestión a Pago']
 }
     # Rellenar con datos desde los DataFrames originales
 
@@ -370,18 +382,22 @@ else:
             chart_data_dict[fecha] = []
             chart_data_dict2[fecha] = []
         chart_data_dict[fecha].extend([ leads_asesor, contactos, valp, pagos, asesor_a_valp,valp_a_venta,gest_a_pago])
-        chart_data_dict2[fecha].extend([lead_a_contacto, contacto_a_valp, lead_a_valp])
+        chart_data_dict2[fecha].extend([asesor_a_valp,contacto_a_valp,valp_a_venta,gest_a_pago])
 
             
     # Convertir el diccionario en un DataFrame
     chart_data2 = pd.DataFrame(chart_data_dict).set_index('Métrica')
     chart_data3 = pd.DataFrame(chart_data_dict2).set_index('Métrica')
 
-chart_data1 = chart_data3.loc[['%Contacto','%Contacto a VALP','%lead a VALP']].T
+chart_data1 = chart_data3.loc[['%Gestión a VALP', '%Contacto a Valp','%Valp a Pago']].T
 # Convertir índice a tipo datetime si no lo está
 chart_data1.index = pd.to_datetime(chart_data1.index)
-
 chart_data1 = chart_data1[~chart_data1.index.dayofweek.isin([5, 6])]
+
+chart_data3 = chart_data3.loc[['%Gestión a Pago']].T
+chart_data3.index = pd.to_datetime(chart_data3.index)
+chart_data3 = chart_data3[~chart_data3.index.dayofweek.isin([5, 6])]
+
 
 chart_data2.columns = pd.to_datetime(chart_data2.columns)
 
@@ -406,7 +422,7 @@ def agrupar_por(fecha_df, agrupacion_seleccionada):
 chart_data_grouped = agrupar_por(chart_data2, agrupacion_seleccionada)
         
 for col in chart_data_grouped.index:
-    if col in [ '%Gestión a VALP','%VALP a Pago','%Gestión a Pago']:  # Asumiendo que estas son las filas donde están los porcentajes
+    if col in [ '%Gestión a Valp','%Contacto a Valp','%Valp a Pago','%Gestión a Pago']:  # Asumiendo que estas son las filas donde están los porcentajes
         for fecha in chart_data_grouped.columns:
             if chart_data_grouped.loc[col, fecha] > 0:  # Asegurar que el valor no sea 0 antes de formatearlo
                     chart_data_grouped.loc[col, fecha] = "{:.1f}%".format(chart_data_grouped.loc[col, fecha])
@@ -416,11 +432,18 @@ for col in chart_data_grouped.index:
         for fecha in chart_data_grouped.columns:
             if chart_data_grouped.loc[col, fecha] >= 0:  # Asegurar que el valor no sea 0 antes de formatearlo
                 chart_data_grouped.loc[col, fecha] = "{:.0f}".format(chart_data_grouped.loc[col, fecha])
-            
-st.markdown(f'<h5 style="color:#01579b;font-weight:bold;">Métricas de Gestión - {agrupacion_seleccionada}</h5>', unsafe_allow_html=True)
+
 st.dataframe(chart_data_grouped)
 st.markdown('<p style="font-weight:bold;">Crecimiento de GESTIÓN por Fechas</p>', unsafe_allow_html=True)
-st.line_chart(chart_data1)
+
+col1, col2 = st.columns([1, 1])
+with col1:
+    st.line_chart(chart_data1)
+with col2:
+
+    st.line_chart(chart_data3)
+
+
 
 st.markdown(f'<h5 style="color:#01579b;font-weight:bold;">Métricas de COHORT - {agrupacion_seleccionada}</h5>', unsafe_allow_html=True)
 col1, col2 = st.columns([1, 3])
