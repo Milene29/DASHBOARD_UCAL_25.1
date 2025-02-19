@@ -6,7 +6,6 @@ import plotly.express as px
 import funciones_generales as fg
 import warnings
 
-
 st.set_page_config(page_title="Streamlit Dashboard", layout="wide")
 @st.cache_data
 def load_data():
