@@ -347,7 +347,7 @@ if Leads_gestion_diaria.empty:
     st.error("No se encontraron datos válidos para las condiciones proporcionadas.")
 else:
     chart_data_dict = {
-    'Métrica': [ 'Gestion Asesor', 'Contacto', 'Valp','Pagos', '%Gestión a Valp','%Valp a Pago','%Gestión a Pago']
+    'Métrica': [ 'Gestion Asesor', 'Contacto', 'Valp','Pagos', '%Gestión a Valp','%Contacto a Valp','%Valp a Pago','%Gestión a Pago']
 }
     chart_data_dict2 = {
     'Métrica': ['%Gestión a VALP','%Contacto a Valp','%Valp a Pago','%Gestión a Pago']
@@ -381,7 +381,7 @@ else:
         if fecha not in chart_data_dict:
             chart_data_dict[fecha] = []
             chart_data_dict2[fecha] = []
-        chart_data_dict[fecha].extend([ leads_asesor, contactos, valp, pagos, asesor_a_valp,valp_a_venta,gest_a_pago])
+        chart_data_dict[fecha].extend([ leads_asesor, contactos, valp, pagos, asesor_a_valp,contacto_a_valp,valp_a_venta,gest_a_pago])
         chart_data_dict2[fecha].extend([asesor_a_valp,contacto_a_valp,valp_a_venta,gest_a_pago])
 
             
