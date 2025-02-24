@@ -7,6 +7,7 @@ import funciones_generales as fg
 import warnings
 
 st.set_page_config(page_title="Streamlit Dashboard", layout="wide")
+
 @st.cache_data
 def load_data():
     folder_id = '17E4c2ShTX0jbH3_4REOv5oCTY2_ypSxZ'
@@ -18,7 +19,6 @@ def load_data():
     for archivo_name, archivo_content in archivos_descargados:
         try:
             print(f"Procesando archivo: {archivo_name}...")
-
             if archivo_name.endswith('.xlsx') and df is None:
                 df = pd.read_excel(io.BytesIO(archivo_content), engine='openpyxl')
                 print(f"Datos de excel cargados. Columnas: {df.columns.tolist()}")
