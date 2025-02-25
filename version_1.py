@@ -96,18 +96,30 @@ def clasificar_mundo(ult_programa_interes):
         return "PORTAFOLIO ANTIGUO"
     elif ult_programa_interes == "SIN CARRERA":
         return "SIN CARRERA"
+    
+
 
 df['ult_programa_interes'] = df['ult_programa_interes'].fillna('SIN CARRERA')
 data2['ult_programa_interes'] = data2['ult_programa_interes'].fillna('SIN CARRERA')
 
 df['MUNDO_CALCULADO'] = df['ult_programa_interes'].apply(clasificar_mundo)
 data2['MUNDO_CALCULADO'] = data2['ult_programa_interes'].apply(clasificar_mundo)
-
+df_traslados = df[['id_prometeo', 'flg_traslados']]
 df['flg_traslados'] = df['flg_traslados'].replace({0: 'NUEVO', 1: 'TRASLADO'})
-
 df['flg_convocatoria'] = df['flg_convocatoria'].replace({0: 'No Convo', 1: 'Convo'})
-data2['flg_convocatoria'] = data2['flg_convocatoria'].replace({'0': 'No Convo', '1': 'Convo'})
 
+data_pago['Horario de Estudio'] = data_pago['Horario de Estudio'].replace({'Nocturno - A distancia': 'RE', 'Diurno': 'PR'})
+
+
+print("creando flg_traslado")
+
+if 'traslados_set' not in globals():
+    traslados_set = set(map(str, df.loc[df['flg_traslados'] == "TRASLADO", 'id_prometeo']))  
+    print("traslados_set creado")
+
+    data2['flg_traslados'] = data2['id_prometeo'].apply(lambda x: "TRASLADO" if x in traslados_set else "NUEVO")
+
+print("termino flg_traslado") 
 
 
 with st.sidebar:
@@ -170,6 +182,7 @@ with st.sidebar:
     if tipo_select != "Todos":
         # Filtrar por el canal seleccionado
      filtered_df = filtered_df[filtered_df['flg_traslados'] == tipo_select]
+     filtered_df_2 = filtered_df_2[filtered_df_2['flg_traslados'] == tipo_select]
      # Filtrar los IDs con flg_traslados = 1
 
      data_pago=data_pago[data_pago['Tipo de Ingreso']== tipo_select]
@@ -182,6 +195,7 @@ with st.sidebar:
         # Filtrar por el canal seleccionado
      filtered_df = filtered_df[filtered_df['modalidad_programa'] == moda_selec]
      filtered_df_2 = filtered_df_2[filtered_df_2['modalidad_programa'] == moda_selec]
+     data_pago=data_pago[data_pago['Horario de Estudio']== moda_selec]
      
     
     canales_disponibles =filtered_df['canal_atribucion'].unique().tolist()
@@ -197,8 +211,7 @@ with st.sidebar:
     subcanal_seleccionado= st.selectbox("Subcanal", options=subcanales_disponibles)
     if subcanal_seleccionado != "Todos":
         # Filtrar por el canal seleccionado
-     filtered_df = filtered_df[filtered_df['subcanal'] == subcanal_seleccionado]
-     
+     filtered_df = filtered_df[filtered_df['subcanal'] == subcanal_seleccionado]     
      
 
     Convo =["Todos"] + filtered_df['flg_convocatoria'].unique().tolist()
@@ -249,7 +262,7 @@ except Exception as e:
     st.error(f"Ocurrió un error al procesar las fechas: {e}")
 # Agrupar por 'sc_fecha' y contar los 'id_prometeo' únicos
 
-asesores_unicos = filtered_df_2[~filtered_df_2['nombre_asesor'].isin(['TI', 'STEFANO'])]['nombre_asesor'].unique()
+asesores_unicos = filtered_df_2[~filtered_df_2['nombre_asesor'].isin(['TI'])]['nombre_asesor'].unique()
 
 col1,col2=st.columns([1,3])
 with col1:
@@ -269,7 +282,6 @@ with col2:
     st.write("")
 
 
-print(asesores_unicos)
 id_prometeo_fechas = filtered_df_2.groupby('sc_fecha')['id_prometeo'].nunique()
 # Convertir a DataFrame para mejor visualización
 Leads_gestion_diaria = id_prometeo_fechas.reset_index()
