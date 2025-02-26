@@ -314,6 +314,7 @@ Leads_contactos = (
 Leads_contactos = Leads_contactos.reset_index()
 # Renombrar columnas para claridad
 Leads_contactos.columns = ['sc_fecha','unique_id_count']
+
 # Mostrar el resultado
 
 # Filtrar los datos según las condiciones proporcionadas
@@ -335,7 +336,7 @@ if '2025-02-09' not in Leads_valp['sc_fecha'].values:
 
 Leads_valp = Leads_valp.sort_values(by='sc_fecha').reset_index(drop=True)
 
-
+print(Leads_valp)
 data_pago['Fecha de Pago de Boleta'] = pd.to_datetime(data_pago['Fecha de Pago de Boleta'], format="%d/%m/%Y", errors='coerce')
 
 data_pago['sc_fecha'] = data_pago['Fecha de Pago de Boleta'].dt.date
@@ -433,6 +434,7 @@ def agrupar_por(fecha_df, agrupacion_seleccionada):
         fecha_df.columns = fecha_df.columns.strftime('%Y-%m-%d')
         return fecha_df
 # Aplicar la agrupación seleccionada
+
 chart_data_grouped = agrupar_por(chart_data2, agrupacion_seleccionada)
         
 for col in chart_data_grouped.index:
