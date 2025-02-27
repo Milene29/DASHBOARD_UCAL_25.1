@@ -12,10 +12,8 @@ st.set_page_config(page_title="Streamlit Dashboard", layout="wide")
 def load_data():
     folder_id = '17E4c2ShTX0jbH3_4REOv5oCTY2_ypSxZ'
     archivos_descargados = fg.obtener_archivos_drive(folder_id)
-    
     data_pago=pd.read_excel('Master_Pagos.xlsx')
     df, data2, data3 = None, None, None
-
     for archivo_name, archivo_content in archivos_descargados:
         try:
             print(f"Procesando archivo: {archivo_name}...")
@@ -108,7 +106,7 @@ df_traslados = df[['id_prometeo', 'flg_traslados']]
 df['flg_traslados'] = df['flg_traslados'].replace({0: 'NUEVO', 1: 'TRASLADO'})
 df['flg_convocatoria'] = df['flg_convocatoria'].replace({0: 'No Convo', 1: 'Convo'})
 
-data_pago['Horario de Estudio'] = data_pago['Horario de Estudio'].replace({'Nocturno - A distancia': 'RE', 'Diurno': 'PR'})
+data_pago['Horario de Estudio'] = data_pago['Horario de Estudio'].replace({'Nocturno - A distancia': 'RE', 'Diurno': 'PR','Nocturno - Psicologia':'RE'})
 
 
 print("creando flg_traslado")
