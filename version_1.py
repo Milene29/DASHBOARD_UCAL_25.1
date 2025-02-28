@@ -25,7 +25,6 @@ def load_data():
                 data2 = pd.read_csv(io.BytesIO(archivo_content), dtype=str)
                 data2.columns = data2.columns.str.strip().str.replace(' ', '_')
                 print(f"Datos de data2 cargados. Columnas: {data2.columns.tolist()}")
-
             elif 'bbdd_ucal3' in archivo_name:
                 data3 = pd.read_csv(io.BytesIO(archivo_content), dtype=str)
                 data3.columns = data3.columns.str.strip().str.replace(' ', '_')
