@@ -83,7 +83,7 @@ def clasificar_mundo(ult_programa_interes):
     elif ult_programa_interes == "DISEÑO GRÁFICO PUBLICITARIO":
         return "MUNDO DISEÑO"
     elif ult_programa_interes in [
-        "ADMINISTRACION", "ADMINISTRACIÓN Y MARKETING", "MARKETING E INNOVACIÓN",
+        "ADMINISTRACIÓN", "ADMINISTRACIÓN Y MARKETING", "MARKETING E INNOVACIÓN",
         "ADMINISTRACIÓN Y NEGOCIOS INTERNACIONALES"
     ]:
         return "MUNDO NEGOCIOS"
@@ -95,12 +95,31 @@ def clasificar_mundo(ult_programa_interes):
         return "SIN CARRERA"
     
 
+carr_mapping = {
+    "Comunicación Audiovisual y Cine": "COMUNICACIÓN AUDIOVISUAL Y CINE",
+    "Arquitectura": "ARQUITECTURA",
+    "Arquitectura de Interiores": "ARQUITECTURA DE INTERIORES",
+    "Administración y Negocios Internacionales": "ADMINISTRACIÓN Y NEGOCIOS INTERNACIONALES",
+    "Psicología": "PSICOLOGÍA",
+    "Diseño Gráfico Publicitario": "DISEÑO GRÁFICO PUBLICITARIO",
+    "Comunicación y Publicidad Transmedia": "COMUNICACIÓN Y PUBLICIDAD TRANSMEDIA",
+    "Administración y Marketing": "ADMINISTRACIÓN Y MARKETING",
+    "Administración": "ADMINISTRACIÓN",
+    "Comunicación": "COMUNICACIÓN",
+    "Marketing e Innovación": "MARKETING E INNOVACIÓN"
+}
+
+
+data_pago['Carrera'] = data_pago['Carrera'].replace(carr_mapping)
+
 
 df['ult_programa_interes'] = df['ult_programa_interes'].fillna('SIN CARRERA')
 data2['ult_programa_interes'] = data2['ult_programa_interes'].fillna('SIN CARRERA')
+data_pago['Carrera'] = data_pago['Carrera'].fillna('SIN CARRERA')
 
 df['MUNDO_CALCULADO'] = df['ult_programa_interes'].apply(clasificar_mundo)
 data2['MUNDO_CALCULADO'] = data2['ult_programa_interes'].apply(clasificar_mundo)
+data_pago['MUNDO_CALCULADO'] = data_pago['Carrera'].apply(clasificar_mundo)
 df_traslados = df[['id_prometeo', 'flg_traslados']]
 df['flg_traslados'] = df['flg_traslados'].replace({0: 'NUEVO', 1: 'TRASLADO'})
 df['flg_convocatoria'] = df['flg_convocatoria'].replace({0: 'No Convo', 1: 'Convo'})
@@ -149,10 +168,12 @@ filtered_df_2 = data2.copy()
 if mundo_seleccionado != "TODAS LAS CARRERAS":
     filtered_df = df[df['MUNDO_CALCULADO'] == mundo_seleccionado]
     filtered_df_2=data2[data2['MUNDO_CALCULADO'] == mundo_seleccionado]
+    data_pago=data_pago[data_pago['MUNDO_CALCULADO']==mundo_seleccionado]
 # Filtrar por mundo
 if carrera_seleccionada != "Todas":
     filtered_df = df[(df['MUNDO_CALCULADO'] == mundo_seleccionado) & (df['ult_programa_interes'] == carrera_seleccionada) ]
     filtered_df_2 = data2[(data2['MUNDO_CALCULADO'] == mundo_seleccionado) & (data2['ult_programa_interes'] == carrera_seleccionada) ]
+    data_pago = data_pago[(data_pago['MUNDO_CALCULADO'] == mundo_seleccionado) & (data_pago['Carrera'] == carrera_seleccionada) ]
 
 if mundo_seleccionado == "SIN CARRERA":
     filtered_df = df[(df['MUNDO_CALCULADO'] == mundo_seleccionado)& (df['ult_programa_interes'] == "SIN CARRERA")]
@@ -333,7 +354,6 @@ if '2025-02-09' not in Leads_valp['sc_fecha'].values:
 
 Leads_valp = Leads_valp.sort_values(by='sc_fecha').reset_index(drop=True)
 
-print(Leads_valp)
 data_pago['Fecha de Pago de Boleta'] = pd.to_datetime(data_pago['Fecha de Pago de Boleta'], format="%d/%m/%Y", errors='coerce')
 
 data_pago['sc_fecha'] = data_pago['Fecha de Pago de Boleta'].dt.date
@@ -371,11 +391,12 @@ else:
     Leads_valp['sc_fecha'] = pd.to_datetime(Leads_valp['sc_fecha'])
     for fecha in Leads_gestion_diaria['sc_fecha']:
         # Obtener los valores correspondientes a cada métrica por fecha
-        leads_tocados = Leads_gestion_diaria.loc[Leads_gestion_diaria['sc_fecha'] == fecha, 'unique_id_count'].sum()
-        leads_asesor = Leads_gestionados.loc[Leads_gestionados['sc_fecha'] == fecha, 'unique_id_count'].sum()
-        contactos = Leads_contactos.loc[Leads_contactos['sc_fecha'] == fecha, 'unique_id_count'].sum()
-        valp = Leads_valp.loc[Leads_valp['sc_fecha'] == fecha, 'unique_id_count'].sum()
         pagos = Leads_pagos.loc[Leads_pagos['sc_fecha'] == fecha, 'unique_id_count'].sum()
+        leads_tocados = Leads_gestion_diaria.loc[Leads_gestion_diaria['sc_fecha'] == fecha, 'unique_id_count'].sum() 
+        leads_asesor = Leads_gestionados.loc[Leads_gestionados['sc_fecha'] == fecha, 'unique_id_count'].sum() +pagos
+        contactos = Leads_contactos.loc[Leads_contactos['sc_fecha'] == fecha, 'unique_id_count'].sum() +pagos
+        valp = Leads_valp.loc[Leads_valp['sc_fecha'] == fecha, 'unique_id_count'].sum() +pagos
+        
 
         # Calcular tasas de conversión
         # Calcular tasas de conversión con validaciones
