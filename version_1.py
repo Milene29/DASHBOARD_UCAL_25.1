@@ -19,25 +19,22 @@ def load_data():
             print(f"Procesando archivo: {archivo_name}...")
             if archivo_name.endswith('.xlsx') and df is None:
                 df = pd.read_excel(io.BytesIO(archivo_content), engine='openpyxl')
-                print(f"Datos de excel cargados. Columnas: {df.columns.tolist()}")
                 print("Archivo Excel cargado correctamente.")
             elif 'bbdd_ucal2' in archivo_name:
                 data2 = pd.read_csv(io.BytesIO(archivo_content), dtype=str)
                 data2.columns = data2.columns.str.strip().str.replace(' ', '_')
-                print(f"Datos de data2 cargados. Columnas: {data2.columns.tolist()}")
             elif 'bbdd_ucal3' in archivo_name:
                 data3 = pd.read_csv(io.BytesIO(archivo_content), dtype=str)
                 data3.columns = data3.columns.str.strip().str.replace(' ', '_')
-                print(f"Datos de data3 cargados. Columnas: {data3.columns.tolist()}")
             elif archivo_content.startswith(b'<!DOCTYPE html>'):
                 print("Error: Se intentó descargar una página en lugar de un CSV")
         except Exception as e:
             print(f"Error al procesar {archivo_name}: {e}")
-
     return df, data2, data3,data_pago
 # Cargar datos
 df, data2, data3 ,data_pago= load_data()
-
+print(data2.columns)
+print(data2.head())
 # Verificar si los datos se cargaron correctamente
 if df is None or data2 is None or data3 is None:
     st.error("Hubo un problema al cargar los datos. Por favor, revisa los archivos en Google Drive.")
@@ -114,7 +111,9 @@ data_pago['Carrera'] = data_pago['Carrera'].replace(carr_mapping)
 
 
 df['ult_programa_interes'] = df['ult_programa_interes'].fillna('SIN CARRERA')
+
 data2['ult_programa_interes'] = data2['ult_programa_interes'].fillna('SIN CARRERA')
+
 data_pago['Carrera'] = data_pago['Carrera'].fillna('SIN CARRERA')
 
 df['MUNDO_CALCULADO'] = df['ult_programa_interes'].apply(clasificar_mundo)
@@ -280,7 +279,7 @@ except Exception as e:
     st.error(f"Ocurrió un error al procesar las fechas: {e}")
 # Agrupar por 'sc_fecha' y contar los 'id_prometeo' únicos
 
-asesores_unicos = filtered_df_2[~filtered_df_2['nombre_asesor'].isin(['TI'])]['nombre_asesor'].unique()
+asesores_unicos = filtered_df_2[~filtered_df_2['nombre_asesor'].isin(['TI INTEGRADOR'])]['nombre_asesor'].unique()
 
 col1,col2=st.columns([1,3])
 with col1:
@@ -306,7 +305,7 @@ Leads_gestion_diaria = id_prometeo_fechas.reset_index()
 Leads_gestion_diaria.columns = ['sc_fecha', 'unique_id_count']
 
 # Filtrar los datos para excluir al "TI" Integrador
-filtered_data = filtered_df_2[filtered_df_2['nombre_asesor'] != 'TI']
+filtered_data = filtered_df_2[filtered_df_2['nombre_asesor'] != 'TI INTEGRADOR']
 if asesores_seleccionados:
     filtered_data = filtered_df_2[filtered_df_2['nombre_asesor'].isin(asesores_seleccionados)]
     data_pago= data_pago[data_pago['Asesor Homologado'].isin(asesores_seleccionados)]
@@ -323,7 +322,7 @@ Leads_gestionados.columns = ['sc_fecha','unique_id_count']
 
 
 
-filtered_data2= filtered_data[(filtered_data['desc_resultado_1'] != 'Sin contacto')  ]
+filtered_data2= filtered_data[(filtered_data['desc_resultado_1'] != 'Sin contacto')  & (filtered_data['nombre_asesor'] != 'TI')  ]
 
 Leads_contactos = (
     filtered_data2.groupby('sc_fecha')['id_prometeo']
@@ -337,7 +336,7 @@ Leads_contactos.columns = ['sc_fecha','unique_id_count']
 
 # Filtrar los datos según las condiciones proporcionadas
 filtered_data3 = filtered_data[
-    (filtered_data['desc_resultado_1'].isin(["Evaluando", "Interesado","Registrado a evento","Se inscribio","Promesa de pago","Registrado a evento"])) & 
+    (filtered_data['desc_resultado_1'].isin(["Evaluando" ,'Interesado','Se inscribio','Promesa de pago'])) & 
     (filtered_data['desc_resultado_1'] != 'Sin contacto') 
 ]
 # Agrupar por 'sc_fecha' y contar los valores únicos de 'id_prometeo'
@@ -482,7 +481,7 @@ with col2:
 st.markdown(f'<h5 style="color:#01579b;font-weight:bold;">Métricas de COHORT - {agrupacion_seleccionada}</h5>', unsafe_allow_html=True)
 col1, col2 = st.columns([1, 3])
 with col1:
-    dias_madura = [0,1, 2, 3, 4, 5, 7, 10]  # Opciones en enteros
+    dias_madura = [0,1, 2, 3, 4, 5, 7, 10,100]  # Opciones en enteros
     dias_select_madura = st.selectbox("Días de maduración", options=dias_madura)
 with col2:
     st.write("")
@@ -503,6 +502,11 @@ df_cohort['contactado_cohort_maduracion'] = (
     (df_cohort['prim_tipif_dif_sin_contacto_fecha'] <= df_cohort['fecha_primera_tipif'] + pd.to_timedelta(dias_select_madura, unit="D"))
 ).astype(int)
 
+df_cohort['perdido_cohort_maduracion'] = (
+    (df_cohort['fecha_primera_tipif'] <= df_cohort['prim_tipif_dif_sin_contacto_fecha']) & 
+    (df_cohort['prim_tipif_dif_sin_contacto_fecha'] <= df_cohort['fecha_primera_tipif'] + pd.to_timedelta(dias_select_madura, unit="D")) & (df_cohort['prim_tipif_dif_sin_contacto'].isin(["Perdido", "Black List"]))
+).astype(int)
+
 df_cohort['val_plus_cohort_maduracion'] = (
     (df_cohort['fecha_primera_tipif'] <= df_cohort['fecha_primera_valp']) & 
     (df_cohort['fecha_primera_valp'] <= df_cohort['fecha_primera_tipif'] + pd.to_timedelta(dias_select_madura, unit="D"))
@@ -520,6 +524,8 @@ leads_cohort = df_cohort.groupby('fecha_primera_tipif')['id_prometeo'].count()
 contactados_cohort = df_cohort.groupby('fecha_primera_tipif')['contactado_cohort_maduracion'].sum()
 val_plus_cohort = df_cohort.groupby('fecha_primera_tipif')['val_plus_cohort_maduracion'].sum()
 pagante_cohort = df_cohort.groupby('fecha_primera_tipif')['pagante_cohort'].sum()
+perdido_cohort = df_cohort.groupby('fecha_primera_tipif')['perdido_cohort_maduracion'].sum()
+
 # Calcular las métricas porcentuales
 pct_contactados = (contactados_cohort / leads_cohort * 100).fillna(0).astype(int)
 pct_contacto_valp = (val_plus_cohort / contactados_cohort * 100).fillna(0).astype(int)
@@ -530,6 +536,7 @@ cohort_metrics = pd.DataFrame({
     'Leads Cohort': leads_cohort,
     'Contactados Cohort': contactados_cohort,
     'Val + Cohort': val_plus_cohort,
+    'Perdidos' :perdido_cohort,
     'Pagante Cohort': pagante_cohort,
     '% Contactados Cohort': pct_contactados,
     '% Contacto a Valp': pct_contacto_valp,
