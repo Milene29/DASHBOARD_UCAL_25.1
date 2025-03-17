@@ -16,6 +16,8 @@ def load_data():
     df, data2, data3 = None, None, None
     for archivo_name, archivo_content in archivos_descargados:
         try:
+            
+            
             print(f"Procesando archivo: {archivo_name}...")
             if archivo_name.endswith('.xlsx') and df is None:
                 df = pd.read_excel(io.BytesIO(archivo_content), engine='openpyxl')
