@@ -15,13 +15,12 @@ def load_data():
     data_pago=pd.read_excel('Master_Pagos.xlsx')
     df, data2, data3 = None, None, None
     for archivo_name, archivo_content in archivos_descargados:
-        try:
-            
-            
+        try:    
             print(f"Procesando archivo: {archivo_name}...")
             if archivo_name.endswith('.xlsx') and df is None:
                 df = pd.read_excel(io.BytesIO(archivo_content), engine='openpyxl')
                 print("Archivo Excel cargado correctamente.")
+                
             elif 'bbdd_ucal2' in archivo_name:
                 data2 = pd.read_csv(io.BytesIO(archivo_content), dtype=str)
                 data2.columns = data2.columns.str.strip().str.replace(' ', '_')
@@ -31,8 +30,10 @@ def load_data():
             elif archivo_content.startswith(b'<!DOCTYPE html>'):
                 print("Error: Se intentó descargar una página en lugar de un CSV")
         except Exception as e:
+            
+            
             print(f"Error al procesar {archivo_name}: {e}")
-    return df, data2, data3,data_pago
+    return df, data2, data3,data_pago 
 # Cargar datos
 df, data2, data3 ,data_pago= load_data()
 print(data2.columns)
@@ -124,6 +125,7 @@ data_pago['MUNDO_CALCULADO'] = data_pago['Carrera'].apply(clasificar_mundo)
 df_traslados = df[['id_prometeo', 'flg_traslados']]
 df['flg_traslados'] = df['flg_traslados'].replace({0: 'NUEVO', 1: 'TRASLADO'})
 df['flg_convocatoria'] = df['flg_convocatoria'].replace({0: 'No Convo', 1: 'Convo'})
+data2['flg_convocatoria'] = data2['flg_convocatoria'].replace({"0": 'No Convo', "1": 'Convo'})
 
 data_pago['Horario de Estudio'] = data_pago['Horario de Estudio'].replace({'Nocturno - A distancia': 'RE', 'Diurno': 'PR','Nocturno - Psicologia':'RE'})
 
@@ -238,7 +240,6 @@ with st.sidebar:
     if Convo_seleccionado != "Todos":
      filtered_df = filtered_df[filtered_df['flg_convocatoria'] == Convo_seleccionado]
      filtered_df_2 = filtered_df_2[filtered_df_2['flg_convocatoria'] == Convo_seleccionado]
-     
 
 nombre_mapping = {
     "Daniel Zapata": "DANIEL ENRIQUE",
@@ -278,7 +279,7 @@ try:
                 (filtered_df_2['sc_fecha'] <= rango_fechas_str[1])
             ]
 except Exception as e:
-    st.error(f"Ocurrió un error al procesar las fechas: {e}")
+    st.error(f"Ocurrió u    n error al procesar las fechas: {e}")
 # Agrupar por 'sc_fecha' y contar los 'id_prometeo' únicos
 
 asesores_unicos = filtered_df_2[~filtered_df_2['nombre_asesor'].isin(['TI INTEGRADOR'])]['nombre_asesor'].unique()
@@ -365,119 +366,122 @@ Leads_pagos = (
     .reset_index(name='unique_id_count')  # Convertir a DataFrame y nombrar la columna
 )
 # Convertir a DataFrame con formato datetime.date
-fecha_completa = pd.date_range(start=rango_fechas[0], end=rango_fechas[1])
-fecha_completa_df = pd.DataFrame({'sc_fecha': fecha_completa.date})
+try:
+    fecha_completa = pd.date_range(start=rango_fechas[0], end=rango_fechas[1])
+    fecha_completa_df = pd.DataFrame({'sc_fecha': fecha_completa.date})
 
-# Unir el DataFrame de pagos con el de todas las fechas
-Leads_pagos = fecha_completa_df.merge(Leads_pagos, on='sc_fecha', how='left')
-# Rellenar valores NaN con 0 (fechas sin pagos)
-Leads_pagos['unique_id_count'] = Leads_pagos['unique_id_count'].fillna(0).astype(int)
-Leads_pagos.columns = ['sc_fecha','unique_id_count']
-# Verificar si el DataFrame tiene datos válidos
-if Leads_gestion_diaria.empty:
-    st.error("No se encontraron datos válidos para las condiciones proporcionadas.")
-else:
-    chart_data_dict = {
-    'Métrica': [ 'Gestion Asesor', 'Contacto', 'Valp','Pagos', '%Gestión a Valp','%Contacto a Valp','%Valp a Pago','%Gestión a Pago']
-}
-    chart_data_dict2 = {
-    'Métrica': ['%Gestión a VALP','%Contacto a Valp','%Valp a Pago','%Gestión a Pago']
-}
-    # Rellenar con datos desde los DataFrames originales
-
-    Leads_gestion_diaria['sc_fecha'] = pd.to_datetime(Leads_gestion_diaria['sc_fecha'])
-    Leads_pagos['sc_fecha'] = pd.to_datetime(Leads_pagos['sc_fecha'])
-    Leads_gestionados['sc_fecha'] = pd.to_datetime(Leads_gestionados['sc_fecha'])
-    Leads_contactos['sc_fecha'] = pd.to_datetime(Leads_contactos['sc_fecha'])
-    Leads_valp['sc_fecha'] = pd.to_datetime(Leads_valp['sc_fecha'])
-    for fecha in Leads_gestion_diaria['sc_fecha']:
-        # Obtener los valores correspondientes a cada métrica por fecha
-        pagos = Leads_pagos.loc[Leads_pagos['sc_fecha'] == fecha, 'unique_id_count'].sum()
-        leads_tocados = Leads_gestion_diaria.loc[Leads_gestion_diaria['sc_fecha'] == fecha, 'unique_id_count'].sum() 
-        leads_asesor = Leads_gestionados.loc[Leads_gestionados['sc_fecha'] == fecha, 'unique_id_count'].sum() +pagos
-        contactos = Leads_contactos.loc[Leads_contactos['sc_fecha'] == fecha, 'unique_id_count'].sum() +pagos
-        valp = Leads_valp.loc[Leads_valp['sc_fecha'] == fecha, 'unique_id_count'].sum() +pagos
-        
-
-        # Calcular tasas de conversión
-        # Calcular tasas de conversión con validaciones
-        lead_a_contacto = (contactos / leads_tocados) * 100 if leads_tocados > 0 else 0
-        contacto_a_valp = ( valp/ contactos) * 100 if contactos > 0 and valp > 0 else 0
-        lead_a_valp=(valp / leads_tocados) * 100 if leads_tocados > 0 and valp > 0 else 0
-        
-        asesor_a_valp = (valp / leads_asesor) * 100 if leads_asesor > 0 and valp > 0 else 0
-        valp_a_venta=(pagos/valp)* 100 if valp > 0 and pagos > 0 else 0
-        gest_a_pago=(pagos/leads_asesor)* 100 if valp > 0 and pagos > 0 else 0
-        
-        # Agregar datos al diccionario
-        if fecha not in chart_data_dict:
-            chart_data_dict[fecha] = []
-            chart_data_dict2[fecha] = []
-        chart_data_dict[fecha].extend([ leads_asesor, contactos, valp, pagos, asesor_a_valp,contacto_a_valp,valp_a_venta,gest_a_pago])
-        chart_data_dict2[fecha].extend([asesor_a_valp,contacto_a_valp,valp_a_venta,gest_a_pago])
-
-            
-    # Convertir el diccionario en un DataFrame
-    chart_data2 = pd.DataFrame(chart_data_dict).set_index('Métrica')
-    chart_data3 = pd.DataFrame(chart_data_dict2).set_index('Métrica')
-
-chart_data1 = chart_data3.loc[['%Gestión a VALP', '%Contacto a Valp','%Valp a Pago']].T
-# Convertir índice a tipo datetime si no lo está
-chart_data1.index = pd.to_datetime(chart_data1.index)
-chart_data1 = chart_data1[~chart_data1.index.dayofweek.isin([5, 6])]
-
-chart_data3 = chart_data3.loc[['%Gestión a Pago']].T
-chart_data3.index = pd.to_datetime(chart_data3.index)
-chart_data3 = chart_data3[~chart_data3.index.dayofweek.isin([5, 6])]
-
-
-chart_data2.columns = pd.to_datetime(chart_data2.columns)
-warnings.simplefilter("ignore")
-pd.options.mode.chained_assignment = None  # Ignorar warnings de pandas
-
-
-def agrupar_por(fecha_df, agrupacion_seleccionada):
-    if agrupacion_seleccionada == "Semana":
-        # Agrupar por semana, obteniendo la fecha de inicio de la semana
-        fecha_df_grouped = fecha_df.groupby(fecha_df.columns.to_series().dt.to_period('W').apply(lambda r: r.start_time), axis=1).sum()
-        # Cambiar el índice de columnas para que muestre las fechas de inicio de semana
-        fecha_df_grouped.columns = fecha_df_grouped.columns.strftime('%Y-%m-%d')
-        return fecha_df_grouped
-    elif agrupacion_seleccionada == "Mes":
-        # Agrupar por mes, obteniendo la fecha de inicio del mes
-        fecha_df_grouped = fecha_df.groupby(fecha_df.columns.to_series().dt.to_period('M').apply(lambda r: r.start_time), axis=1).sum()
-        # Cambiar el índice de columnas para que muestre las fechas de inicio del mes
-        fecha_df_grouped.columns = fecha_df_grouped.columns.strftime('%Y-%m-%d')
-        return fecha_df_grouped
-    else:  # Si es por Día
-        fecha_df.columns = fecha_df.columns.strftime('%Y-%m-%d')
-        return fecha_df
-# Aplicar la agrupación seleccionada
-
-chart_data_grouped = agrupar_por(chart_data2, agrupacion_seleccionada)
-        
-for col in chart_data_grouped.index:
-    if col in [ '%Gestión a Valp','%Contacto a Valp','%Valp a Pago','%Gestión a Pago']:  # Asumiendo que estas son las filas donde están los porcentajes
-        for fecha in chart_data_grouped.columns:
-            if chart_data_grouped.loc[col, fecha] > 0:  # Asegurar que el valor no sea 0 antes de formatearlo
-                    chart_data_grouped.loc[col, fecha] = "{:.1f}%".format(chart_data_grouped.loc[col, fecha])
-            else:
-                    chart_data_grouped.loc[col, fecha] = "0%"
+    # Unir el DataFrame de pagos con el de todas las fechas
+    Leads_pagos = fecha_completa_df.merge(Leads_pagos, on='sc_fecha', how='left')
+    # Rellenar valores NaN con 0 (fechas sin pagos)
+    Leads_pagos['unique_id_count'] = Leads_pagos['unique_id_count'].fillna(0).astype(int)
+    Leads_pagos.columns = ['sc_fecha','unique_id_count']
+    # Verificar si el DataFrame tiene datos válidos
+    if Leads_gestion_diaria.empty:
+        st.error("No se encontraron datos válidos para las condiciones proporcionadas.")
     else:
-        for fecha in chart_data_grouped.columns:
-            if chart_data_grouped.loc[col, fecha] >= 0:  # Asegurar que el valor no sea 0 antes de formatearlo
-                chart_data_grouped.loc[col, fecha] = "{:.0f}".format(chart_data_grouped.loc[col, fecha])
+        chart_data_dict = {
+        'Métrica': [ 'Gestion Asesor', 'Contacto', 'Valp','Pagos', '%Gestión a Valp','%Contacto a Valp','%Valp a Pago','%Gestión a Pago']
+    }
+        chart_data_dict2 = {
+        'Métrica': ['%Gestión a VALP','%Contacto a Valp','%Valp a Pago','%Gestión a Pago']
+    }
+        # Rellenar con datos desde los DataFrames originales
 
-st.dataframe(chart_data_grouped)
-st.markdown('<p style="font-weight:bold;">Crecimiento de GESTIÓN por Fechas</p>', unsafe_allow_html=True)
+        Leads_gestion_diaria['sc_fecha'] = pd.to_datetime(Leads_gestion_diaria['sc_fecha'])
+        Leads_pagos['sc_fecha'] = pd.to_datetime(Leads_pagos['sc_fecha'])
+        Leads_gestionados['sc_fecha'] = pd.to_datetime(Leads_gestionados['sc_fecha'])
+        Leads_contactos['sc_fecha'] = pd.to_datetime(Leads_contactos['sc_fecha'])
+        Leads_valp['sc_fecha'] = pd.to_datetime(Leads_valp['sc_fecha'])
+        for fecha in Leads_gestion_diaria['sc_fecha']:
+            # Obtener los valores correspondientes a cada métrica por fecha
+            pagos = Leads_pagos.loc[Leads_pagos['sc_fecha'] == fecha, 'unique_id_count'].sum()
+            leads_tocados = Leads_gestion_diaria.loc[Leads_gestion_diaria['sc_fecha'] == fecha, 'unique_id_count'].sum() 
+            leads_asesor = Leads_gestionados.loc[Leads_gestionados['sc_fecha'] == fecha, 'unique_id_count'].sum() +pagos
+            contactos = Leads_contactos.loc[Leads_contactos['sc_fecha'] == fecha, 'unique_id_count'].sum() +pagos
+            valp = Leads_valp.loc[Leads_valp['sc_fecha'] == fecha, 'unique_id_count'].sum() +pagos
+            
 
-col1, col2 = st.columns([1, 1])
-with col1:
-    st.line_chart(chart_data1)
-with col2:
+            # Calcular tasas de conversión
+            # Calcular tasas de conversión con validaciones
+            lead_a_contacto = (contactos / leads_tocados) * 100 if leads_tocados > 0 else 0
+            contacto_a_valp = ( valp/ contactos) * 100 if contactos > 0 and valp > 0 else 0
+            lead_a_valp=(valp / leads_tocados) * 100 if leads_tocados > 0 and valp > 0 else 0
+            
+            asesor_a_valp = (valp / leads_asesor) * 100 if leads_asesor > 0 and valp > 0 else 0
+            valp_a_venta=(pagos/valp)* 100 if valp > 0 and pagos > 0 else 0
+            gest_a_pago=(pagos/leads_asesor)* 100 if valp > 0 and pagos > 0 else 0
+            
+            # Agregar datos al diccionario
+            if fecha not in chart_data_dict:
+                chart_data_dict[fecha] = []
+                chart_data_dict2[fecha] = []
+            chart_data_dict[fecha].extend([ leads_asesor, contactos, valp, pagos, asesor_a_valp,contacto_a_valp,valp_a_venta,gest_a_pago])
+            chart_data_dict2[fecha].extend([asesor_a_valp,contacto_a_valp,valp_a_venta,gest_a_pago])
 
-    st.line_chart(chart_data3)
+                
+        # Convertir el diccionario en un DataFrame
+        chart_data2 = pd.DataFrame(chart_data_dict).set_index('Métrica')
+        chart_data3 = pd.DataFrame(chart_data_dict2).set_index('Métrica')
 
+    chart_data1 = chart_data3.loc[['%Gestión a VALP', '%Contacto a Valp','%Valp a Pago']].T
+    # Convertir índice a tipo datetime si no lo está
+    chart_data1.index = pd.to_datetime(chart_data1.index)
+    chart_data1 = chart_data1[~chart_data1.index.dayofweek.isin([5, 6])]
+
+    chart_data3 = chart_data3.loc[['%Gestión a Pago']].T
+    chart_data3.index = pd.to_datetime(chart_data3.index)
+    chart_data3 = chart_data3[~chart_data3.index.dayofweek.isin([5, 6])]
+
+
+    chart_data2.columns = pd.to_datetime(chart_data2.columns)
+    warnings.simplefilter("ignore")
+    pd.options.mode.chained_assignment = None  # Ignorar warnings de pandas
+
+
+    def agrupar_por(fecha_df, agrupacion_seleccionada):
+        if agrupacion_seleccionada == "Semana":
+            # Agrupar por semana, obteniendo la fecha de inicio de la semana
+            fecha_df_grouped = fecha_df.groupby(fecha_df.columns.to_series().dt.to_period('W').apply(lambda r: r.start_time), axis=1).sum()
+            # Cambiar el índice de columnas para que muestre las fechas de inicio de semana
+            fecha_df_grouped.columns = fecha_df_grouped.columns.strftime('%Y-%m-%d')
+            return fecha_df_grouped
+        elif agrupacion_seleccionada == "Mes":
+            # Agrupar por mes, obteniendo la fecha de inicio del mes
+            fecha_df_grouped = fecha_df.groupby(fecha_df.columns.to_series().dt.to_period('M').apply(lambda r: r.start_time), axis=1).sum()
+            # Cambiar el índice de columnas para que muestre las fechas de inicio del mes
+            fecha_df_grouped.columns = fecha_df_grouped.columns.strftime('%Y-%m-%d')
+            return fecha_df_grouped
+        else:  # Si es por Día
+            fecha_df.columns = fecha_df.columns.strftime('%Y-%m-%d')
+            return fecha_df
+    # Aplicar la agrupación seleccionada
+
+    chart_data_grouped = agrupar_por(chart_data2, agrupacion_seleccionada)
+            
+    for col in chart_data_grouped.index:
+        if col in [ '%Gestión a Valp','%Contacto a Valp','%Valp a Pago','%Gestión a Pago']:  # Asumiendo que estas son las filas donde están los porcentajes
+            for fecha in chart_data_grouped.columns:
+                if chart_data_grouped.loc[col, fecha] > 0:  # Asegurar que el valor no sea 0 antes de formatearlo
+                        chart_data_grouped.loc[col, fecha] = "{:.1f}%".format(chart_data_grouped.loc[col, fecha])
+                else:
+                        chart_data_grouped.loc[col, fecha] = "0%"
+        else:
+            for fecha in chart_data_grouped.columns:
+                if chart_data_grouped.loc[col, fecha] >= 0:  # Asegurar que el valor no sea 0 antes de formatearlo
+                    chart_data_grouped.loc[col, fecha] = "{:.0f}".format(chart_data_grouped.loc[col, fecha])
+
+    st.dataframe(chart_data_grouped)
+    st.markdown('<p style="font-weight:bold;">Crecimiento de GESTIÓN por Fechas</p>', unsafe_allow_html=True)
+
+    col1, col2 = st.columns([1, 1])
+    with col1:
+        st.line_chart(chart_data1)
+    with col2:
+
+        st.line_chart(chart_data3)
+
+except NameError:
+    st.error("Error: 'rango_fechas' no está definido. Verifica que la variable esté correctamente asignada.")
 
 
 st.markdown(f'<h5 style="color:#01579b;font-weight:bold;">Métricas de COHORT - {agrupacion_seleccionada}</h5>', unsafe_allow_html=True)
