@@ -12,7 +12,7 @@ st.set_page_config(page_title="Streamlit Dashboard", layout="wide")
 def load_data():
     folder_id = '17E4c2ShTX0jbH3_4REOv5oCTY2_ypSxZ'
     archivos_descargados = fg.obtener_archivos_drive(folder_id)
-    data_pago=pd.read_excel('Master_Pagos.xlsx')
+    data_pago=pd.read_excel('Master_Pagos.xlsx', sheet_name="Real")
     df, data2, data3 = None, None, None
     for archivo_name, archivo_content in archivos_descargados:
         try:    
@@ -282,7 +282,7 @@ except Exception as e:
     st.error(f"Ocurrió u    n error al procesar las fechas: {e}")
 # Agrupar por 'sc_fecha' y contar los 'id_prometeo' únicos
 
-asesores_unicos = filtered_df_2[~filtered_df_2['nombre_asesor'].isin(['TI INTEGRADOR'])]['nombre_asesor'].unique()
+asesores_unicos = filtered_df_2[~filtered_df_2['nombre_asesor'].isin(['TI'])]['nombre_asesor'].unique()
 
 col1,col2=st.columns([1,3])
 with col1:
@@ -308,7 +308,7 @@ Leads_gestion_diaria = id_prometeo_fechas.reset_index()
 Leads_gestion_diaria.columns = ['sc_fecha', 'unique_id_count']
 
 # Filtrar los datos para excluir al "TI" Integrador
-filtered_data = filtered_df_2[filtered_df_2['nombre_asesor'] != 'TI INTEGRADOR']
+filtered_data = filtered_df_2[filtered_df_2['nombre_asesor'] != 'TI']
 if asesores_seleccionados:
     filtered_data = filtered_df_2[filtered_df_2['nombre_asesor'].isin(asesores_seleccionados)]
     data_pago= data_pago[data_pago['Asesor Homologado'].isin(asesores_seleccionados)]
@@ -356,7 +356,7 @@ if '2025-02-09' not in Leads_valp['sc_fecha'].values:
 
 Leads_valp = Leads_valp.sort_values(by='sc_fecha').reset_index(drop=True)
 
-data_pago['Fecha de Pago de Boleta'] = pd.to_datetime(data_pago['Fecha de Pago de Boleta'], format="%d/%m/%Y", errors='coerce')
+data_pago['Fecha de Pago de Boleta'] = pd.to_datetime(data_pago['Fecha de Pago'], format="%d/%m/%Y", errors='coerce')
 
 data_pago['sc_fecha'] = data_pago['Fecha de Pago de Boleta'].dt.date
 
