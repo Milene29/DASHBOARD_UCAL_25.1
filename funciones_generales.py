@@ -3,33 +3,32 @@ import pytz
 from pydrive.auth import GoogleAuth
 from pydrive.drive import GoogleDrive
 import requests
-
+from googleapiclient.discovery import build
 
 def fecha_peru_hoy():
     lima_timezone = pytz.timezone('America/Lima')
     lima_time = datetime.datetime.now(lima_timezone)
     return lima_time.date()
+hoy = fecha_peru_hoy()
+today_string = hoy.strftime('%y%m%d')
 
 def autenticar_drive():
     gauth = GoogleAuth()
     # Intenta cargar las credenciales almacenadas
     gauth.LoadCredentialsFile("mycreds.txt")
-    if gauth.credentials is None:
+    if gauth.credentials is None or gauth.access_token_expired:
         # Autenticación si no hay credenciales guardadas
         gauth.LocalWebserverAuth()  # Esto abre un navegador para autorizar la app
-        gauth.SaveCredentialsFile("mycreds.txt") 
-    elif not gauth.credentials or gauth.access_token_expired:
-        if gauth.access_token_expired:
-            print("Access token expired. Refreshing...")
-        # Solicitar acceso offline para obtener un refresh token
-            gauth.LocalWebserverAuth()  # No es necesario el parámetro 'access_type'
-            gauth.SaveCredentialsFile("mycreds.txt")  # Guardar las credenciales para la próxima vez
+
+    elif gauth.access_token_expired:
+        gauth.Refresh() # Guardar las credenciales para la próxima vez
     else:
         # Autorizar con las credenciales guardadas
         gauth.Authorize()
-
+    gauth.SaveCredentialsFile("mycreds.txt")
     # Retorna el objeto GoogleDrive con las credenciales autorizadas
     drive = GoogleDrive(gauth)
+    
     return drive
 
 def obtener_archivos_drive(folder_id):
@@ -42,7 +41,7 @@ def obtener_archivos_drive(folder_id):
         file_name = file['title']
         file_id = file['id']
         # Verificar si es un archivo válido (CSV o Excel)
-        if file_name.endswith(('.csv', '.xlsx')) and file_name not in archivos_vistos:
+        if file_name.endswith(('.csv', 'xlsx')) and file_name not in archivos_vistos:
             print(f"Cargando archivo: {file_name}")
             file_url = f"https://drive.google.com/uc?export=download&id={file_id}"
             

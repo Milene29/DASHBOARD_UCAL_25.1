@@ -5,26 +5,34 @@ from st_aggrid import AgGrid, GridOptionsBuilder
 import plotly.express as px
 import funciones_generales as fg
 import warnings
+import pytz
+import datetime
 
 st.set_page_config(page_title="Streamlit Dashboard", layout="wide")
+
+
+hoy = fg.fecha_peru_hoy()
+today_string = hoy.strftime('%y%m%d')
 
 @st.cache_data
 def load_data():
     folder_id = '17E4c2ShTX0jbH3_4REOv5oCTY2_ypSxZ'
     archivos_descargados = fg.obtener_archivos_drive(folder_id)
-    data_pago=pd.read_excel('Master_Pagos.xlsx')
-    df, data2, data3 = None, None, None
+    data_pago=pd.read_excel('Master_Pagos.xlsx', sheet_name="Real")
+    df,df_261, data2, data3 = None, None,None, None
     for archivo_name, archivo_content in archivos_descargados:
         try:    
             print(f"Procesando archivo: {archivo_name}...")
-            if archivo_name.endswith('.xlsx') and df is None:
+            if archivo_name.endswith(f"bbdd_ucal_['2025-2']_conv_(0,1)_pagantes_(0,1)_fecha_{today_string}.xlsx") and df is None:
                 df = pd.read_excel(io.BytesIO(archivo_content), engine='openpyxl')
                 print("Archivo Excel cargado correctamente.")
-                
-            elif 'bbdd_ucal2' in archivo_name:
+            elif archivo_name.endswith(f"bbdd_ucal_['2026-1']_conv_(0,1)_pagantes_(0,1)_fecha_{today_string}.xlsx") and df is None:
+                df_261 = pd.read_excel(io.BytesIO(archivo_content), engine='openpyxl')
+                print("Archivo Excel cargado correctamente.")
+            elif '2025-2' in archivo_name:
                 data2 = pd.read_csv(io.BytesIO(archivo_content), dtype=str)
                 data2.columns = data2.columns.str.strip().str.replace(' ', '_')
-            elif 'bbdd_ucal3' in archivo_name:
+            elif '2024-2' in archivo_name:
                 data3 = pd.read_csv(io.BytesIO(archivo_content), dtype=str)
                 data3.columns = data3.columns.str.strip().str.replace(' ', '_')
             elif archivo_content.startswith(b'<!DOCTYPE html>'):
@@ -33,11 +41,11 @@ def load_data():
             
             
             print(f"Error al procesar {archivo_name}: {e}")
-    return df, data2, data3,data_pago 
+    return df,df_261, data2, data3,data_pago 
 # Cargar datos
-df, data2, data3 ,data_pago= load_data()
-print(data2.columns)
-print(data2.head())
+df, df_261,data2, data3 ,data_pago= load_data()
+print("................................p´´´++++++++++++++++++++++")
+print(data3.head())
 # Verificar si los datos se cargaron correctamente
 if df is None or data2 is None or data3 is None:
     st.error("Hubo un problema al cargar los datos. Por favor, revisa los archivos en Google Drive.")
@@ -64,10 +72,13 @@ else:
         unsafe_allow_html=True
     )
     # Selección de la base de datos
-    col1, col2 = st.columns(2)
+    col1, col2,col3 = st.columns(3)
     with col1:
         agrupacion_seleccionada = st.selectbox("Seleccione Base", ["Real", "Espejo"])
         data2 = data2 if agrupacion_seleccionada == "Real" else data3
+    with col2:
+        agrupacion_seleccionada = st.selectbox("Campaña: ", ["25.2", "26.1"])
+        df = df if agrupacion_seleccionada == "25.2" else df_261
 # Helper function to format numbers with commas
 def format_with_commas(number):
     return f"{number:,}"
@@ -166,7 +177,7 @@ with st.sidebar:
 
 filtered_df = df.copy()
 filtered_df_2 = data2.copy()
-
+print(filtered_df_2.head())
 # Filtrar por mundo
 if mundo_seleccionado != "TODAS LAS CARRERAS":
     filtered_df = df[df['MUNDO_CALCULADO'] == mundo_seleccionado]
@@ -258,10 +269,10 @@ nombre_mapping = {
 data_pago['Asesor Homologado'] = data_pago['Asesor Homologado'].replace(nombre_mapping)
 
 try:
-    min_fecha =  '2025-01-01'
+    min_fecha =  filtered_df_2['sc_fecha'].min()
     max_fecha = filtered_df_2['sc_fecha'].max()
-
-    with col2:
+    print(min_fecha)
+    with col3:
         rango_fechas = st.date_input(
                     "Selecciona el rango de fechas",
                     value=(pd.to_datetime(min_fecha).date(), pd.to_datetime(max_fecha).date()),  # Convertir str a datetime.date
@@ -282,7 +293,7 @@ except Exception as e:
     st.error(f"Ocurrió u    n error al procesar las fechas: {e}")
 # Agrupar por 'sc_fecha' y contar los 'id_prometeo' únicos
 
-asesores_unicos = filtered_df_2[~filtered_df_2['nombre_asesor'].isin(['TI INTEGRADOR'])]['nombre_asesor'].unique()
+asesores_unicos = filtered_df_2[~filtered_df_2['nombre_asesor'].isin(['TI'])]['nombre_asesor'].unique()
 
 col1,col2=st.columns([1,3])
 with col1:
@@ -308,7 +319,7 @@ Leads_gestion_diaria = id_prometeo_fechas.reset_index()
 Leads_gestion_diaria.columns = ['sc_fecha', 'unique_id_count']
 
 # Filtrar los datos para excluir al "TI" Integrador
-filtered_data = filtered_df_2[filtered_df_2['nombre_asesor'] != 'TI INTEGRADOR']
+filtered_data = filtered_df_2[filtered_df_2['nombre_asesor'] != 'TI']
 if asesores_seleccionados:
     filtered_data = filtered_df_2[filtered_df_2['nombre_asesor'].isin(asesores_seleccionados)]
     data_pago= data_pago[data_pago['Asesor Homologado'].isin(asesores_seleccionados)]
@@ -356,7 +367,7 @@ if '2025-02-09' not in Leads_valp['sc_fecha'].values:
 
 Leads_valp = Leads_valp.sort_values(by='sc_fecha').reset_index(drop=True)
 
-data_pago['Fecha de Pago de Boleta'] = pd.to_datetime(data_pago['Fecha de Pago de Boleta'], format="%d/%m/%Y", errors='coerce')
+data_pago['Fecha de Pago de Boleta'] = pd.to_datetime(data_pago['Fecha de Pago'], format="%d/%m/%Y", errors='coerce')
 
 data_pago['sc_fecha'] = data_pago['Fecha de Pago de Boleta'].dt.date
 
@@ -439,21 +450,33 @@ try:
 
 
     def agrupar_por(fecha_df, agrupacion_seleccionada):
+        metricas_porcentaje = ['%Gestión a Valp','%Contacto a Valp','%Valp a Pago','%Gestión a Pago']
+
         if agrupacion_seleccionada == "Semana":
-            # Agrupar por semana, obteniendo la fecha de inicio de la semana
-            fecha_df_grouped = fecha_df.groupby(fecha_df.columns.to_series().dt.to_period('W').apply(lambda r: r.start_time), axis=1).sum()
-            # Cambiar el índice de columnas para que muestre las fechas de inicio de semana
-            fecha_df_grouped.columns = fecha_df_grouped.columns.strftime('%Y-%m-%d')
-            return fecha_df_grouped
+            agrupador = fecha_df.columns.to_series().dt.to_period('W').apply(lambda r: r.start_time)
         elif agrupacion_seleccionada == "Mes":
-            # Agrupar por mes, obteniendo la fecha de inicio del mes
-            fecha_df_grouped = fecha_df.groupby(fecha_df.columns.to_series().dt.to_period('M').apply(lambda r: r.start_time), axis=1).sum()
-            # Cambiar el índice de columnas para que muestre las fechas de inicio del mes
-            fecha_df_grouped.columns = fecha_df_grouped.columns.strftime('%Y-%m-%d')
-            return fecha_df_grouped
-        else:  # Si es por Día
+            agrupador = fecha_df.columns.to_series().dt.to_period('M').apply(lambda r: r.start_time)
+        else:
             fecha_df.columns = fecha_df.columns.strftime('%Y-%m-%d')
             return fecha_df
+
+        # Separa métricas porcentuales y absolutas
+        df_abs = fecha_df[~fecha_df.index.isin(metricas_porcentaje)]
+        df_pct = fecha_df[fecha_df.index.isin(metricas_porcentaje)]
+
+        # Agrupar absolutas con sum
+        df_abs_grouped = df_abs.groupby(agrupador, axis=1).sum()
+
+        # Agrupar porcentajes con promedio
+        df_pct_grouped = df_pct.groupby(agrupador, axis=1).mean()
+
+        # Juntar de nuevo
+        df_grouped = pd.concat([df_abs_grouped, df_pct_grouped])
+
+        # Formatear columnas
+        df_grouped.columns = df_grouped.columns.strftime('%Y-%m-%d')
+        
+        return df_grouped
     # Aplicar la agrupación seleccionada
 
     chart_data_grouped = agrupar_por(chart_data2, agrupacion_seleccionada)
@@ -560,22 +583,33 @@ chart_data = chart_data[~chart_data.index.dayofweek.isin([5, 6])]
 cohort_metrics.columns = pd.to_datetime(cohort_metrics.columns, errors='coerce') 
 # Función para agrupar por semana o mes en el DataFrame de cohortes
 def agrupar_por_cohort(fecha_df, agrupacion_seleccionada):
+    metricas_porcentaje = ['% Contactados Cohort', '% Contacto a Valp', '% lead a Valp', '% Pagantes Cohort']
+
     fecha_df.columns = pd.to_datetime(fecha_df.columns, errors='coerce')
+    df_abs = fecha_df[~fecha_df.index.isin(metricas_porcentaje)]
+    df_pct = fecha_df[fecha_df.index.isin(metricas_porcentaje)]
+
     if agrupacion_seleccionada == "Semana":
-        # Agrupar por semana, obteniendo la fecha de inicio de la semana
-        fecha_df_grouped = fecha_df.groupby(fecha_df.columns.to_series().dt.to_period('W').apply(lambda r: r.start_time), axis=1).sum()
-        # Cambiar el índice de columnas para que muestre las fechas de inicio de semana
-        fecha_df_grouped.columns = fecha_df_grouped.columns.strftime('%Y-%m-%d')
-        return fecha_df_grouped
+        agrupador = fecha_df.columns.to_series().dt.to_period('W').apply(lambda r: r.start_time)
     elif agrupacion_seleccionada == "Mes":
-        # Agrupar por mes, obteniendo la fecha de inicio del mes
-        fecha_df_grouped = fecha_df.groupby(fecha_df.columns.to_series().dt.to_period('M').apply(lambda r: r.start_time), axis=1).sum()
-        # Cambiar el índice de columnas para que muestre las fechas de inicio del mes
-        fecha_df_grouped.columns = fecha_df_grouped.columns.strftime('%Y-%m-%d')
-        return fecha_df_grouped
-    else:  # Si es por Día
+        agrupador = fecha_df.columns.to_series().dt.to_period('M').apply(lambda r: r.start_time)
+    else:
         fecha_df.columns = fecha_df.columns.strftime('%Y-%m-%d')
         return fecha_df
+
+    # Sumar métricas absolutas
+    df_abs_grouped = df_abs.groupby(agrupador, axis=1).sum()
+
+    # Promediar métricas de porcentaje
+    df_pct_grouped = df_pct.groupby(agrupador, axis=1).mean()
+
+    # Unir ambas
+    df_grouped = pd.concat([df_abs_grouped, df_pct_grouped])
+
+    # Formatear columnas como fechas
+    df_grouped.columns = df_grouped.columns.strftime('%Y-%m-%d')
+    
+    return df_grouped
 
 # Aplicar la agrupación seleccionada a cohort_metrics
 cohort_metrics_grouped = agrupar_por_cohort(cohort_metrics, agrupacion_seleccionada)
