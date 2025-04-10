@@ -22,6 +22,8 @@ def load_data():
     df,df_261, data2, data3 = None, None,None, None
     for archivo_name, archivo_content in archivos_descargados:
         try:    
+            
+            
             print(f"Procesando archivo: {archivo_name}...")
             if archivo_name.endswith(f"bbdd_ucal_['2025-2']_conv_(0,1)_pagantes_(0,1)_fecha_{today_string}.xlsx") and df is None:
                 df = pd.read_excel(io.BytesIO(archivo_content), engine='openpyxl')
