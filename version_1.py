@@ -45,6 +45,11 @@ def load_data():
             print(f"Error al procesar {archivo_name}: {e}")
     return df,df_261, data2, data3,data_pago 
 # Cargar datos
+
+# Botón para reiniciar la aplicación y limpiar el caché
+if st.button('Reiniciar'):
+    st.cache_data.clear()  # Limpiar caché de datos
+    st.rerun()  
 df, df_261,data2, data3 ,data_pago= load_data()
 print("................................p´´´++++++++++++++++++++++")
 print(data3.head())
@@ -913,17 +918,17 @@ col1,col2=st.columns(2)
 with col1:
 
     # Aplicar prefiltro: Excluir "Sin contacto" en la columna "prim_tipif_no_TI"
-    filtered_df_mad = filtered_df[filtered_df["prim_tipif_no_TI"] != "Sin contacto"].copy()
+    filtered_df_mad = filtered_df[filtered_df["prim_tipif_dif_sin_contacto"] != "Sin contacto"].copy()
 
     # Eliminar filas sin fecha de primer toque o fecha de pago
-    filtered_df_mad = filtered_df_mad.dropna(subset=["prim_tipif_no_TI2", "fecha_pagante_crm"])
+    filtered_df_mad = filtered_df_mad.dropna(subset=["prim_tipif_dif_sin_contacto_fecha", "fecha_pagante_crm"])
 
     # Convertir columnas de fecha a tipo datetime
-    filtered_df_mad["prim_tipif_no_TI2"] = pd.to_datetime(filtered_df_mad["prim_tipif_no_TI2"])
+    filtered_df_mad["prim_tipif_dif_sin_contacto_fecha"] = pd.to_datetime(filtered_df_mad["prim_tipif_dif_sin_contacto_fecha"])
     filtered_df_mad["fecha_pagante_crm"] = pd.to_datetime(filtered_df_mad["fecha_pagante_crm"])
 
     # Calcular maduración (días entre primer toque y pago)
-    filtered_df_mad["maduracion_dias"] = (filtered_df_mad["fecha_pagante_crm"] - filtered_df_mad["prim_tipif_no_TI2"]).dt.days
+    filtered_df_mad["maduracion_dias"] = (filtered_df_mad["fecha_pagante_crm"] - filtered_df_mad["prim_tipif_dif_sin_contacto_fecha"]).dt.days
 
     # Eliminar valores atípicos usando el rango intercuartil (IQR)
     Q1 = filtered_df_mad["maduracion_dias"].quantile(0.25)
@@ -950,7 +955,7 @@ with col1:
 with col2:
 
     # Aplicar prefiltro: Excluir "Sin contacto" en la columna "prim_tipif_no_TI"
-    filtered_df_mad = filtered_df[filtered_df["prim_tipif_no_TI"] != "Sin contacto"].copy()
+    filtered_df_mad = filtered_df[filtered_df["prim_tipif_dif_sin_contacto"] != "Sin contacto"].copy()
 
     # Convertir a numérico para evitar errores
     filtered_df_mad["cantidad_tipificaciones"] = pd.to_numeric(filtered_df_mad["cantidad_tipificaciones"], errors="coerce")
