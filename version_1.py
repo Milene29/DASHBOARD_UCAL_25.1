@@ -30,13 +30,11 @@ def load_data():
                 print("Archivo Excel cargado correctamente.")
             elif archivo_name.endswith(f"bbdd_ucal_['2026-1']_conv_(0,1)_pagantes_(0,1)_fecha_{today_string}.xlsx") and df is None:
                 df_261 = pd.read_excel(io.BytesIO(archivo_content), engine='openpyxl')
-                print("Archivo Excel cargado correctamente.")
+                print("Archivo Excel 2026.1 cargado correctamente.")
             elif '2025-2' in archivo_name:
                 data2 = pd.read_csv(io.BytesIO(archivo_content), dtype=str)
                 data2.columns = data2.columns.str.strip().str.replace(' ', '_')
             elif '2024-2' in archivo_name:
-                
-                
                 data3 = pd.read_csv(io.BytesIO(archivo_content), dtype=str)
                 data3.columns = data3.columns.str.strip().str.replace(' ', '_')
             elif archivo_content.startswith(b'<!DOCTYPE html>'):
@@ -93,25 +91,25 @@ def format_with_commas(number):
     return f"{number:,}"
 
 # Define logic to classify careers into worlds
-def clasificar_mundo(ult_programa_interes):
-    if ult_programa_interes in [
+def clasificar_mundo(PROGRAMA):
+    if PROGRAMA in [
         "COMUNICACIÓN", "COMUNICACIÓN AUDIOVISUAL Y CINE", "COMUNICACIÓN Y PUBLICIDAD TRANSMEDIA"
     ]:
         return "MUNDO COMUNICACIONES"
-    elif ult_programa_interes in ["ARQUITECTURA", "ARQUITECTURA DE INTERIORES"]:
+    elif PROGRAMA in ["ARQUITECTURA", "ARQUITECTURA DE INTERIORES"]:
         return "MUNDO ARQUITECTURA"
-    elif ult_programa_interes == "DISEÑO GRÁFICO PUBLICITARIO":
+    elif PROGRAMA == "DISEÑO GRÁFICO PUBLICITARIO":
         return "MUNDO DISEÑO"
-    elif ult_programa_interes in [
+    elif PROGRAMA in [
         "ADMINISTRACIÓN", "ADMINISTRACIÓN Y MARKETING", "MARKETING E INNOVACIÓN",
         "ADMINISTRACIÓN Y NEGOCIOS INTERNACIONALES"
     ]:
         return "MUNDO NEGOCIOS"
-    elif ult_programa_interes == "PSICOLOGÍA":
+    elif PROGRAMA == "PSICOLOGÍA":
         return "MUNDO PSICOLOGIA"
-    elif ult_programa_interes in ["DISEÑO ESTRATÉGICO", "INGENIERIA INDUSTRIAL"]:
+    elif PROGRAMA in ["DISEÑO ESTRATÉGICO", "INGENIERIA INDUSTRIAL"]:
         return "PORTAFOLIO ANTIGUO"
-    elif ult_programa_interes == "SIN CARRERA":
+    elif PROGRAMA == "SIN CARRERA":
         return "SIN CARRERA"
     
 
@@ -133,18 +131,27 @@ carr_mapping = {
 data_pago['Carrera'] = data_pago['Carrera'].replace(carr_mapping)
 
 
-df['ult_programa_interes'] = df['ult_programa_interes'].fillna('SIN CARRERA')
+df['PROGRAMA'] = df['PROGRAMA'].fillna('SIN CARRERA')
+df['flg_convocatoria'] = df['FLAG CONVO']
+df['agrupacion_tipificacion_actual'] = df['STATUS DE GESTION']
+df['ult_tipf_dif_sin_contacto'] = df['RESPUESTA ULT TIP']
+df['ult_tipf_dif_sin_contacto_2']=df['RESPUESTA 2 ULT TIP']
+df['cantidad_tipificaciones']=df['# DE TOQUES']
+df['DIAS_VIDA']=df['DIAS DE VIDA']
+df['turno']=df['TURNO']
+df['fecha_registro_periodo']=df['FECHA HORA DE REGISTRO']
 
 data2['ult_programa_interes'] = data2['ult_programa_interes'].fillna('SIN CARRERA')
 
 data_pago['Carrera'] = data_pago['Carrera'].fillna('SIN CARRERA')
-
-df['MUNDO_CALCULADO'] = df['ult_programa_interes'].apply(clasificar_mundo)
+df['id_prometeo'] = df['ID PROMETEO']
+df['MUNDO_CALCULADO'] = df['PROGRAMA'].apply(clasificar_mundo)
 data2['MUNDO_CALCULADO'] = data2['ult_programa_interes'].apply(clasificar_mundo)
 data_pago['MUNDO_CALCULADO'] = data_pago['Carrera'].apply(clasificar_mundo)
-df_traslados = df[['id_prometeo', 'flg_traslados']]
-df['flg_traslados'] = df['flg_traslados'].replace({0: 'NUEVO', 1: 'TRASLADO'})
+df_traslados = df[['id_prometeo', 'ES TRASLADO']]
+df['ES TRASLADO'] = df['ES TRASLADO'].replace({0: 'NUEVO', 1: 'TRASLADO'})
 df['flg_convocatoria'] = df['flg_convocatoria'].replace({0: 'No Convo', 1: 'Convo'})
+
 data2['flg_convocatoria'] = data2['flg_convocatoria'].replace({"0": 'No Convo', "1": 'Convo'})
 
 data_pago['Horario de Estudio'] = data_pago['Horario de Estudio'].replace({'Nocturno - A distancia': 'RE', 'Diurno': 'PR','Nocturno - Psicologia':'RE'})
@@ -153,10 +160,10 @@ data_pago['Horario de Estudio'] = data_pago['Horario de Estudio'].replace({'Noct
 print("creando flg_traslado")
 
 if 'traslados_set' not in globals():
-    traslados_set = set(map(str, df.loc[df['flg_traslados'] == "TRASLADO", 'id_prometeo']))  
+    traslados_set = set(map(str, df.loc[df['ES TRASLADO'] == "TRASLADO", 'id_prometeo']))  
     print("traslados_set creado")
 
-    data2['flg_traslados'] = data2['id_prometeo'].apply(lambda x: "TRASLADO" if x in traslados_set else "NUEVO")
+    data2['ES TRASLADO'] = data2['id_prometeo'].apply(lambda x: "TRASLADO" if x in traslados_set else "NUEVO")
 
 print("termino flg_traslado") 
 
@@ -170,15 +177,15 @@ with st.sidebar:
 
     # Filtro de carreras dinámico según el mundo seleccionado
     if mundo_seleccionado == "TODAS LAS CARRERAS":
-        carreras_disponibles = df['ult_programa_interes'].dropna().unique()
+        carreras_disponibles = df['PROGRAMA'].dropna().unique()
         carreras_disponibles = [carrera for carrera in carreras_disponibles if carrera != "SIN CARRERA"]
 
         carreras_disponibles2 = data2['ult_programa_interes'].dropna().unique()
         carrera_seleccionada = st.selectbox("Selecciona una carrera",options=["Todas"] + list(carreras_disponibles))
 
     elif mundo_seleccionado != "SIN CARRERA":
-        carreras_disponibles = df[df['MUNDO_CALCULADO'] == mundo_seleccionado]['ult_programa_interes'].dropna().unique()
-        carreras_disponibles2 = data2[data2['MUNDO_CALCULADO'] == mundo_seleccionado]['ult_programa_interes'].dropna().unique()
+        carreras_disponibles = df[df['MUNDO_CALCULADO'] == mundo_seleccionado]['PROGRAMA'].dropna().unique()
+        carreras_disponibles2 = data2[data2['MUNDO_CALCULADO'] == mundo_seleccionado]['PROGRAMA'].dropna().unique()
         carrera_seleccionada = st.selectbox("Selecciona una carrera",options=["Todas"] + list(carreras_disponibles))
     else:
         
@@ -194,19 +201,19 @@ if mundo_seleccionado != "TODAS LAS CARRERAS":
     data_pago=data_pago[data_pago['MUNDO_CALCULADO']==mundo_seleccionado]
 # Filtrar por mundo
 if carrera_seleccionada != "Todas":
-    filtered_df = df[(df['MUNDO_CALCULADO'] == mundo_seleccionado) & (df['ult_programa_interes'] == carrera_seleccionada) ]
-    filtered_df_2 = data2[(data2['MUNDO_CALCULADO'] == mundo_seleccionado) & (data2['ult_programa_interes'] == carrera_seleccionada) ]
+    filtered_df = df[(df['MUNDO_CALCULADO'] == mundo_seleccionado) & (df['PROGRAMA'] == carrera_seleccionada) ]
+    filtered_df_2 = data2[(data2['MUNDO_CALCULADO'] == mundo_seleccionado) & (data2['PROGRAMA'] == carrera_seleccionada) ]
     data_pago = data_pago[(data_pago['MUNDO_CALCULADO'] == mundo_seleccionado) & (data_pago['Carrera'] == carrera_seleccionada) ]
 
 if mundo_seleccionado == "SIN CARRERA":
-    filtered_df = df[(df['MUNDO_CALCULADO'] == mundo_seleccionado)& (df['ult_programa_interes'] == "SIN CARRERA")]
-    filtered_df2 = data2[(data2['MUNDO_CALCULADO'] == mundo_seleccionado)& (data2['ult_programa_interes'] == "SIN CARRERA")]
+    filtered_df = df[(df['MUNDO_CALCULADO'] == mundo_seleccionado)& (df['PROGRAMA'] == "SIN CARRERA")]
+    filtered_df2 = data2[(data2['MUNDO_CALCULADO'] == mundo_seleccionado)& (data2['PROGRAMA'] == "SIN CARRERA")]
 
 # Mostrar resultados filtrados
 with st.sidebar:
     try:
             # Asegurarse de que la columna sea numérica
-            filtered_df['dias_sin_contacto'] = pd.to_numeric(filtered_df['dias_sin_contacto'], errors='coerce')
+            filtered_df['dias_sin_contacto'] = pd.to_numeric(filtered_df['DIAS SIN CONTACTO'], errors='coerce')
 
             # Calcular el mínimo y el máximo
             min_dias = int(filtered_df['dias_sin_contacto'].min())
@@ -217,7 +224,7 @@ with st.sidebar:
             filtered_df = filtered_df.query("@rango_dias[0] <= dias_sin_contacto <= @rango_dias[1]")
     except ValueError as e:
                 st.error(f"Error al procesar la columna 'dias_sin_contacto': {e}")  
-                 
+    filtered_df['flg_traslados']=filtered_df['ES TRASLADO']
     tipo_ingreso =["Todos"] + filtered_df['flg_traslados'].unique().tolist()
     tipo_select= st.selectbox("Tipo Ingreso", options=tipo_ingreso)
     if tipo_select != "Todos":
@@ -229,7 +236,7 @@ with st.sidebar:
      data_pago=data_pago[data_pago['Tipo de Ingreso']== tipo_select]
 
  
-
+    filtered_df['modalidad_programa']=filtered_df['MODALIDAD']
     modalidad =["Todos"] + filtered_df['modalidad_programa'].unique().tolist()
     moda_selec= st.selectbox("Modalidad", options=modalidad)
     if moda_selec != "Todos":
@@ -238,7 +245,8 @@ with st.sidebar:
      filtered_df_2 = filtered_df_2[filtered_df_2['modalidad_programa'] == moda_selec]
      data_pago=data_pago[data_pago['Horario de Estudio']== moda_selec]
      
-    
+    filtered_df['canal_atribucion']=filtered_df['CANAL']
+    filtered_df['subcanal']=filtered_df['SUBCANAL']
     canales_disponibles =filtered_df['canal_atribucion'].unique().tolist()
     canales_seleccionados = st.multiselect("Canal", options=canales_disponibles,placeholder="Selecciona uno o varios canales...")
     # Filtrar los datos según la selección
@@ -255,11 +263,11 @@ with st.sidebar:
      filtered_df = filtered_df[filtered_df['subcanal'] == subcanal_seleccionado]     
      
 
-    Convo =["Todos"] + filtered_df['flg_convocatoria'].unique().tolist()
+    Convo =["Todos"] + filtered_df['FLAG CONVO'].unique().tolist()
     Convo_seleccionado= st.selectbox("Convo", options=Convo)
     if Convo_seleccionado != "Todos":
-     filtered_df = filtered_df[filtered_df['flg_convocatoria'] == Convo_seleccionado]
-     filtered_df_2 = filtered_df_2[filtered_df_2['flg_convocatoria'] == Convo_seleccionado]
+     filtered_df = filtered_df[filtered_df['FLAG CONVO'] == Convo_seleccionado]
+     filtered_df_2 = filtered_df_2[filtered_df_2['FLAG CONVO'] == Convo_seleccionado]
 
 nombre_mapping = {
     "Daniel Zapata": "DANIEL ENRIQUE",
@@ -300,7 +308,7 @@ try:
             ]
 except Exception as e:
     st.error(f"Ocurrió u    n error al procesar las fechas: {e}")
-# Agrupar por 'sc_fecha' y contar los 'id_prometeo' únicos
+# Agrupar por 'sc_fecha' y contar los 'ID PROMETEO' únicos
 
 asesores_unicos = filtered_df_2[~filtered_df_2['nombre_asesor'].isin(['TI'])]['nombre_asesor'].unique()
 
@@ -523,13 +531,24 @@ with col1:
     dias_select_madura = st.selectbox("Días de maduración", options=dias_madura)
 with col2:
     st.write("")
-
+    
+filtered_df['prim_tipif_dif_sin_contacto'] =filtered_df['RESPUESTA PRIM TIP DF SN CONTC']
+filtered_df['prim_tipif_dif_sin_contacto_fecha'] =df['FECHA HORA DE PRIM TIP'] 
+filtered_df['fecha_primera_tipif'] =filtered_df['FECHA HORA DE REGISTRO'] 
+filtered_df['fecha_pagante_crm'] =filtered_df['FECHA PAGO'] 
 df_cohort = filtered_df[filtered_df['flg_convocatoria'] == "Convo"].copy()
 fecha_inicio = pd.to_datetime(rango_fechas[0]).date()
 fecha_fin = pd.to_datetime(rango_fechas[1]).date()
 
+
 df_cohort['fecha_primera_tipif'] = pd.to_datetime(df_cohort['fecha_primera_tipif'], errors='coerce').dt.date
 df_cohort['prim_tipif_dif_sin_contacto_fecha'] = pd.to_datetime(df_cohort['prim_tipif_dif_sin_contacto_fecha'], errors='coerce').dt.date
+
+df_cohort['fecha_primera_valp'] = df_cohort[
+    (df_cohort['RESPUESTA PRIM TIP DF SN CONTC'].isin(["Evaluando", "Interesado"]))
+]['fecha_primera_tipif']
+
+
 df_cohort['fecha_primera_valp'] = pd.to_datetime(df_cohort['fecha_primera_valp'], errors='coerce').dt.date
 df_cohort = df_cohort[
     (df_cohort['fecha_primera_tipif'] >= fecha_inicio) &
@@ -540,6 +559,8 @@ df_cohort['contactado_cohort_maduracion'] = (
     (df_cohort['prim_tipif_dif_sin_contacto_fecha'] <= df_cohort['fecha_primera_tipif'] + pd.to_timedelta(dias_select_madura, unit="D"))
 ).astype(int)
 
+print(df_cohort['contactado_cohort_maduracion'])
+
 df_cohort['perdido_cohort_maduracion'] = (
     (df_cohort['fecha_primera_tipif'] <= df_cohort['prim_tipif_dif_sin_contacto_fecha']) & 
     (df_cohort['prim_tipif_dif_sin_contacto_fecha'] <= df_cohort['fecha_primera_tipif'] + pd.to_timedelta(dias_select_madura, unit="D")) & (df_cohort['prim_tipif_dif_sin_contacto'].isin(["Perdido", "Black List"]))
@@ -549,6 +570,7 @@ df_cohort['val_plus_cohort_maduracion'] = (
     (df_cohort['fecha_primera_tipif'] <= df_cohort['fecha_primera_valp']) & 
     (df_cohort['fecha_primera_valp'] <= df_cohort['fecha_primera_tipif'] + pd.to_timedelta(dias_select_madura, unit="D"))
 ).astype(int)
+
 df_cohort['val_plus_cohort'] = (df_cohort['fecha_primera_tipif'] == df_cohort['fecha_primera_valp']).astype(int)
 contactados_ids = df_cohort.loc[df_cohort['contactado_cohort_maduracion'] == 1, 'id_prometeo']
 
@@ -566,7 +588,10 @@ perdido_cohort = df_cohort.groupby('fecha_primera_tipif')['perdido_cohort_madura
 
 # Calcular las métricas porcentuales
 pct_contactados = (contactados_cohort / leads_cohort * 100).fillna(0).astype(int)
-pct_contacto_valp = (val_plus_cohort / contactados_cohort * 100).fillna(0).astype(int)
+print(pct_contactados)
+pct_contacto_valp = (val_plus_cohort / contactados_cohort * 100).replace([float('inf'), -float('inf')], 0).fillna(0).round().astype(int)
+
+print(pct_contacto_valp)
 pct_lead_valp = (val_plus_cohort / leads_cohort * 100).fillna(0).astype(int)
 pct_pagantes = ((pagante_cohort / contactados_cohort) * 100).replace([float('inf'), -float('inf')], 0).fillna(0).astype(int)
 # Crear DataFrame final
@@ -686,19 +711,16 @@ with col3:
     st.metric("Sin Contacto", format_with_commas(sin_contacto))
 with col4:
     # Contar la cantidad de leads volver a llamar
-    valp_condition = (
-        (filtered_df['agrupacion_tipificacion_actual'] == "VALORES_VALORACIONES_POSITIVAS") &
-        (filtered_df['ult_tipf_dif_sin_contacto'].isin(["Volver a llamar"]))
+    vll = (
+        (filtered_df['agrupacion_tipificacion_actual'] == "VALORES_VOLVER_A_LLAMAR")
     )
     # Contar la cantidad de leads valp
-    leads_vll = filtered_df[valp_condition]['id_prometeo'].nunique()
+    leads_vll = filtered_df[vll]['id_prometeo'].nunique()
     st.metric("Volver a llamar", format_with_commas(leads_vll))
 with col5:
     # Contar la cantidad de leads valp
     valp_condition = (
-        (filtered_df['agrupacion_tipificacion_actual'] == "VALORES_VALORACIONES_POSITIVAS") &
-        (filtered_df['ult_tipf_dif_sin_contacto'].isin(["Interesado", "Evaluando","Volver a llamar"])) &
-        (filtered_df['cant_val_pos-vall'] > 0)
+        (filtered_df['agrupacion_tipificacion_actual'] == "VALORES_VALORACIONES_POSITIVAS") 
     )
     # Contar la cantidad de leads valp
     leads_valp = filtered_df[valp_condition]['id_prometeo'].nunique()
@@ -735,8 +757,7 @@ convo_vll = filtered_df[
 
 convo_valp = filtered_df[
     (filtered_df['agrupacion_tipificacion_actual'] == "VALORES_VALORACIONES_POSITIVAS") & 
-    (filtered_df['ult_tipf_dif_sin_contacto'].isin(["Interesado", "Evaluando", "Volver a llamar"])) & 
-    (filtered_df['cant_val_pos-vall'] > 0) & 
+    (filtered_df['ult_tipf_dif_sin_contacto'].isin(["Interesado", "Evaluando", "Volver a llamar"]))& 
     (filtered_df['flg_convocatoria'] == "Convo")
 ]['id_prometeo'].nunique()
 
@@ -800,8 +821,7 @@ with col3:
 
     seguimiento_vivo = filtered_df[
         (filtered_df['dias_sin_contacto'] <= 3) & 
-        (filtered_df['agrupacion_tipificacion_actual'] == "VALORES_VALORACIONES_POSITIVAS") & 
-        (filtered_df['cant_val_pos-vall'] > 0)
+        (filtered_df['agrupacion_tipificacion_actual'] == "VALORES_VALORACIONES_POSITIVAS") 
     ]
     val_vivo = filtered_df[
     (filtered_df['dias_sin_contacto'] <= 3) & 
@@ -1063,7 +1083,7 @@ with col1:
 # "turno"  == mañana tarde 
 #flg_traslados = 0 normla 1 traslados
 
-columnas_seleccionadas = ['id_prometeo', 'ult_programa_interes','MUNDO_CALCULADO', 'modalidad_programa','turno','flg_traslados','canal_atribucion', 'subcanal','fecha_registro_periodo']
+columnas_seleccionadas = ['id_prometeo', 'PROGRAMA','MUNDO_CALCULADO', 'modalidad_programa','turno','flg_traslados','canal_atribucion', 'subcanal','fecha_registro_periodo']
 filtered_dff = filtered_df[columnas_seleccionadas]
 st.write("")
 st.dataframe(filtered_dff,hide_index=True)
