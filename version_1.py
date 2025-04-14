@@ -17,13 +17,14 @@ today_string = hoy.strftime('%y%m%d')
 @st.cache_data
 def load_data():
     folder_id = '17E4c2ShTX0jbH3_4REOv5oCTY2_ypSxZ'
+    file_id='1wLewUXO5ISe2qCDJnTXUf4WdGCA1z8DgP-GO55cUJVI'
+    file_id_251='1uML9hmrdOZVQ3Fa1GLDo7XkoWRbZSPgAcKYV1aFd6xs'
     archivos_descargados = fg.obtener_archivos_drive(folder_id)
-    data_pago=pd.read_excel('Master_Pagos.xlsx', sheet_name="Real")
-    df,df_261, data2, data3 = None, None,None, None
+    data_pago_252=fg.descargar_archivo_drive(file_id)
+    data_pago_251=fg.descargar_archivo_drive(file_id_251)
+    df,df_261, data2 = None, None,None
     for archivo_name, archivo_content in archivos_descargados:
         try:    
-            
-            
             print(f"Procesando archivo: {archivo_name}...")
             if archivo_name.endswith(f"bbdd_ucal_['2025-2']_conv_(0,1)_pagantes_(0,1)_fecha_{today_string}.xlsx") and df is None:
                 df = pd.read_excel(io.BytesIO(archivo_content), engine='openpyxl')
@@ -34,27 +35,26 @@ def load_data():
             elif '2025-2' in archivo_name:
                 data2 = pd.read_csv(io.BytesIO(archivo_content), dtype=str)
                 data2.columns = data2.columns.str.strip().str.replace(' ', '_')
-            elif '2024-2' in archivo_name:
-                data3 = pd.read_csv(io.BytesIO(archivo_content), dtype=str)
-                data3.columns = data3.columns.str.strip().str.replace(' ', '_')
+            
             elif archivo_content.startswith(b'<!DOCTYPE html>'):
                 print("Error: Se intentó descargar una página en lugar de un CSV")
         except Exception as e:
             
             
             print(f"Error al procesar {archivo_name}: {e}")
-    return df,df_261, data2, data3,data_pago 
+    return df,df_261, data2,data_pago_252,data_pago_251
 # Cargar datos
 
 # Botón para reiniciar la aplicación y limpiar el caché
 if st.button('Reiniciar'):
     st.cache_data.clear()  # Limpiar caché de datos
     st.rerun()  
-df, df_261,data2, data3 ,data_pago= load_data()
+df, df_261,data2 ,data_pago,data_pago_251= load_data()
+print(data_pago.head)
 print("................................p´´´++++++++++++++++++++++")
-print(data3.head())
+
 # Verificar si los datos se cargaron correctamente
-if df is None or data2 is None or data3 is None:
+if df is None or data2 is None or df_261 or data_pago is None or data_pago_251 is None:
     st.error("Hubo un problema al cargar los datos. Por favor, revisa los archivos en Google Drive.")
 else:
     # Título del dashboard con formato de Streamlit
@@ -80,12 +80,12 @@ else:
     )
     # Selección de la base de datos
     col1, col2,col3 = st.columns(3)
+    with col3:
+        st.write("")
     with col1:
-        agrupacion_seleccionada = st.selectbox("Seleccione Base", ["Real", "Espejo"])
-        data2 = data2 if agrupacion_seleccionada == "Real" else data3
-    with col2:
         agrupacion_seleccionada = st.selectbox("Campaña: ", ["25.2", "26.1"])
         df = df if agrupacion_seleccionada == "25.2" else df_261
+        data_pago=data_pago if agrupacion_seleccionada == "25.2" else data_pago_251
 # Helper function to format numbers with commas
 def format_with_commas(number):
     return f"{number:,}"
@@ -289,7 +289,7 @@ try:
     min_fecha =  filtered_df_2['sc_fecha'].min()
     max_fecha = filtered_df_2['sc_fecha'].max()
     print(min_fecha)
-    with col3:
+    with col2:
         rango_fechas = st.date_input(
                     "Selecciona el rango de fechas",
                     value=(pd.to_datetime(min_fecha).date(), pd.to_datetime(max_fecha).date()),  # Convertir str a datetime.date
