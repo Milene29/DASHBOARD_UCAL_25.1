@@ -86,6 +86,8 @@ else:
         agrupacion_seleccionada = st.selectbox("Campaña: ", ["25.2", "26.1"])
         df = df if agrupacion_seleccionada == "25.2" else df_261
         data_pago=data_pago if agrupacion_seleccionada == "25.2" else data_pago_251
+        data_pago['Asesor Homologado']=data_pago['ASESOR HOMOLOGADO'] if agrupacion_seleccionada == "25.2" else data_pago['Asesor Homologado']
+        data_pago['Fecha de Pago']=data_pago['FECHA DE PAGO'] if agrupacion_seleccionada == "25.2" else data_pago['Fecha de Pago']
 # Helper function to format numbers with commas
 def format_with_commas(number):
     return f"{number:,}"
@@ -128,7 +130,7 @@ carr_mapping = {
 }
 
 
-data_pago['Carrera'] = data_pago['Carrera'].replace(carr_mapping)
+data_pago['Carrera'] = data_pago['CARRERA'].replace(carr_mapping)
 
 
 df['PROGRAMA'] = df['PROGRAMA'].fillna('SIN CARRERA')
@@ -154,7 +156,7 @@ df['flg_convocatoria'] = df['flg_convocatoria'].replace({0: 'No Convo', 1: 'Conv
 
 data2['flg_convocatoria'] = data2['flg_convocatoria'].replace({"0": 'No Convo', "1": 'Convo'})
 
-data_pago['Horario de Estudio'] = data_pago['Horario de Estudio'].replace({'Nocturno - A distancia': 'RE', 'Diurno': 'PR','Nocturno - Psicologia':'RE'})
+data_pago['Horario de Estudio'] = data_pago['HORARIO DE ESTUDIO'].replace({'Nocturno - A distancia': 'RE', 'Diurno': 'PR','Nocturno - Psicologia':'RE'})
 
 
 print("creando flg_traslado")
@@ -286,7 +288,7 @@ nombre_mapping = {
 data_pago['Asesor Homologado'] = data_pago['Asesor Homologado'].replace(nombre_mapping)
 
 try:
-    min_fecha =  filtered_df_2['sc_fecha'].min()
+    min_fecha =  "2025-04-01"
     max_fecha = filtered_df_2['sc_fecha'].max()
     print(min_fecha)
     with col2:
