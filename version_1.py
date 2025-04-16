@@ -52,11 +52,12 @@ if st.button('Reiniciar'):
     st.cache_data.clear()  # Limpiar caché de datos
     st.rerun()  
 df, df_261,data2 ,data_pago,data_pago_251,data_pago_261= load_data()
-print(data_pago.head)
+
 print("................................p´´´++++++++++++++++++++++")
 
+print(df_261)
 # Verificar si los datos se cargaron correctamente
-if df is None or data2 is None or df_261 or data_pago is None or data_pago_251 is None:
+if (df is None):
     st.error("Hubo un problema al cargar los datos. Por favor, revisa los archivos en Google Drive.")
 else:
     # Título del dashboard con formato de Streamlit
