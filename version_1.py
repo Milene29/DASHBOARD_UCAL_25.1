@@ -19,9 +19,11 @@ def load_data():
     folder_id = '17E4c2ShTX0jbH3_4REOv5oCTY2_ypSxZ'
     file_id='1wLewUXO5ISe2qCDJnTXUf4WdGCA1z8DgP-GO55cUJVI'
     file_id_251='1uML9hmrdOZVQ3Fa1GLDo7XkoWRbZSPgAcKYV1aFd6xs'
+    file_id_261='1gVSQQQ1obeIgh6fgsjBD3L2YIG3eU5bizauYnYpzy1Y'
     archivos_descargados = fg.obtener_archivos_drive(folder_id)
     data_pago_252=fg.descargar_archivo_drive(file_id)
     data_pago_251=fg.descargar_archivo_drive(file_id_251)
+    data_pago_261=fg.descargar_archivo_drive(file_id_261)
     df,df_261, data2 = None, None,None
     for archivo_name, archivo_content in archivos_descargados:
         try:    
@@ -42,14 +44,14 @@ def load_data():
             
             
             print(f"Error al procesar {archivo_name}: {e}")
-    return df,df_261, data2,data_pago_252,data_pago_251
+    return df,df_261, data2,data_pago_252,data_pago_251,data_pago_261
 # Cargar datos
 
 # Botón para reiniciar la aplicación y limpiar el caché
 if st.button('Reiniciar'):
     st.cache_data.clear()  # Limpiar caché de datos
     st.rerun()  
-df, df_261,data2 ,data_pago,data_pago_251= load_data()
+df, df_261,data2 ,data_pago,data_pago_251,data_pago_261= load_data()
 print(data_pago.head)
 print("................................p´´´++++++++++++++++++++++")
 
@@ -67,7 +69,7 @@ else:
             text-align: center; 
             font-weight: bold; 
             margin-bottom: 20px;">
-            Dashboard UCAL 25.1
+            Dashboard UCAL 25.2
         </h1>
         """,
         unsafe_allow_html=True
@@ -85,9 +87,9 @@ else:
     with col1:
         agrupacion_seleccionada = st.selectbox("Campaña: ", ["25.2", "26.1"])
         df = df if agrupacion_seleccionada == "25.2" else df_261
-        data_pago=data_pago if agrupacion_seleccionada == "25.2" else data_pago_251
-        data_pago['Asesor Homologado']=data_pago['ASESOR HOMOLOGADO'] if agrupacion_seleccionada == "25.2" else data_pago['Asesor Homologado']
-        data_pago['Fecha de Pago']=data_pago['FECHA DE PAGO'] if agrupacion_seleccionada == "25.2" else data_pago['Fecha de Pago']
+        data_pago=data_pago if agrupacion_seleccionada == "25.2" else data_pago_261
+        data_pago['Asesor Homologado']=data_pago['ASESOR HOMOLOGADO'] if agrupacion_seleccionada == "25.2" else data_pago['ASESOR HOMOLOGADO']
+        data_pago['Fecha de Pago']=data_pago['FECHA DE PAGO'] if agrupacion_seleccionada == "25.2" else data_pago['FECHA DE PAGO']
 # Helper function to format numbers with commas
 def format_with_commas(number):
     return f"{number:,}"
