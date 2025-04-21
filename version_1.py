@@ -24,7 +24,7 @@ def load_data():
     data_pago_252=fg.descargar_archivo_drive(file_id)
     data_pago_251=fg.descargar_archivo_drive(file_id_251)
     data_pago_261=fg.descargar_archivo_drive(file_id_261)
-    df,df_261, data2 = None, None,None
+    df,df_261, data2,data_espejo = None, None,None,None
     for archivo_name, archivo_content in archivos_descargados:
         try:    
             print(f"Procesando archivo: {archivo_name}...")
@@ -37,6 +37,9 @@ def load_data():
             elif '2025-2' in archivo_name:
                 data2 = pd.read_csv(io.BytesIO(archivo_content), dtype=str)
                 data2.columns = data2.columns.str.strip().str.replace(' ', '_')
+            elif '2024-2' in archivo_name:
+                data_espejo = pd.read_csv(io.BytesIO(archivo_content), dtype=str)
+                data_espejo.columns = data_espejo.columns.str.strip().str.replace(' ', '_')
             
             elif archivo_content.startswith(b'<!DOCTYPE html>'):
                 print("Error: Se intentó descargar una página en lugar de un CSV")
@@ -44,18 +47,18 @@ def load_data():
             
             
             print(f"Error al procesar {archivo_name}: {e}")
-    return df,df_261, data2,data_pago_252,data_pago_251,data_pago_261
+    return df,df_261, data2,data_espejo,data_pago_252,data_pago_251,data_pago_261
 # Cargar datos
 
 # Botón para reiniciar la aplicación y limpiar el caché
 if st.button('Reiniciar'):
     st.cache_data.clear()  # Limpiar caché de datos
     st.rerun()  
-df, df_261,data2 ,data_pago,data_pago_251,data_pago_261= load_data()
+df, df_261,data2 ,data_espejo,data_pago,data_pago_251,data_pago_261= load_data()
 
 print("................................p´´´++++++++++++++++++++++")
 
-print(df_261)
+print(data_espejo.columns)
 # Verificar si los datos se cargaron correctamente
 if (df is None):
     st.error("Hubo un problema al cargar los datos. Por favor, revisa los archivos en Google Drive.")
@@ -88,9 +91,10 @@ else:
     with col1:
         agrupacion_seleccionada = st.selectbox("Campaña: ", ["25.2", "26.1"])
         df = df if agrupacion_seleccionada == "25.2" else df_261
+        data2= data2 if agrupacion_seleccionada == "25.2" else data_espejo
         data_pago=data_pago if agrupacion_seleccionada == "25.2" else data_pago_261
         data_pago['Asesor Homologado']=data_pago['ASESOR HOMOLOGADO'] if agrupacion_seleccionada == "25.2" else data_pago['ASESOR HOMOLOGADO']
-        data_pago['Fecha de Pago']=data_pago['FECHA DE PAGO'] if agrupacion_seleccionada == "25.2" else data_pago['FECHA DE PAGO']
+        data_pago['Fecha de Pago']=data_pago['FECHA DE PAGO COMPLETO'] if agrupacion_seleccionada == "25.2" else data_pago['FECHA DE PAGO COMPLETO']
 # Helper function to format numbers with commas
 def format_with_commas(number):
     return f"{number:,}"
@@ -291,7 +295,7 @@ nombre_mapping = {
 data_pago['Asesor Homologado'] = data_pago['Asesor Homologado'].replace(nombre_mapping)
 
 try:
-    min_fecha =  "2025-04-01"
+    min_fecha =  filtered_df_2['sc_fecha'].min()
     max_fecha = filtered_df_2['sc_fecha'].max()
     print(min_fecha)
     with col2:
@@ -315,7 +319,7 @@ except Exception as e:
     st.error(f"Ocurrió u    n error al procesar las fechas: {e}")
 # Agrupar por 'sc_fecha' y contar los 'ID PROMETEO' únicos
 
-asesores_unicos = filtered_df_2[~filtered_df_2['nombre_asesor'].isin(['TI'])]['nombre_asesor'].unique()
+asesores_unicos = filtered_df_2[~filtered_df_2['nombre_asesor'].isin(['TI INTEGRADOR'])]['nombre_asesor'].unique()
 
 col1,col2=st.columns([1,3])
 with col1:
@@ -341,7 +345,7 @@ Leads_gestion_diaria = id_prometeo_fechas.reset_index()
 Leads_gestion_diaria.columns = ['sc_fecha', 'unique_id_count']
 
 # Filtrar los datos para excluir al "TI" Integrador
-filtered_data = filtered_df_2[filtered_df_2['nombre_asesor'] != 'TI']
+filtered_data = filtered_df_2[filtered_df_2['nombre_asesor'] != 'TI INTEGRADOR']
 if asesores_seleccionados:
     filtered_data = filtered_df_2[filtered_df_2['nombre_asesor'].isin(asesores_seleccionados)]
     data_pago= data_pago[data_pago['Asesor Homologado'].isin(asesores_seleccionados)]
@@ -358,7 +362,7 @@ Leads_gestionados.columns = ['sc_fecha','unique_id_count']
 
 
 
-filtered_data2= filtered_data[(filtered_data['desc_resultado_1'] != 'Sin contacto')  & (filtered_data['nombre_asesor'] != 'TI')  ]
+filtered_data2= filtered_data[(filtered_data['desc_resultado_1'] != 'Sin contacto')  & (filtered_data['nombre_asesor'] != 'TI INTEGRADOR')  ]
 
 Leads_contactos = (
     filtered_data2.groupby('sc_fecha')['id_prometeo']
