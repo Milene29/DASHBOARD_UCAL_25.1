@@ -294,6 +294,8 @@ nombre_mapping = {
 
 data_pago['Asesor Homologado'] = data_pago['Asesor Homologado'].replace(nombre_mapping)
 
+filtered_df_2 = filtered_df_2.rename(columns={'fecha_hora_accion': 'sc_fecha'})
+
 try:
     min_fecha =  filtered_df_2['sc_fecha'].min()
     max_fecha = filtered_df_2['sc_fecha'].max()
