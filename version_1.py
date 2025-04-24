@@ -660,7 +660,7 @@ try:
 
     st.markdown(f'<h4 style="color:#01579b;font-weight:bold;">Consolidado por Asesor</h4>', unsafe_allow_html=True)
 
-    st.dataframe(df_consolidado, use_container_width=True)
+    st.dataframe(df_consolidado, use_container_width=True,height=530)
         
         
         
