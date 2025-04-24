@@ -335,7 +335,7 @@ except Exception as e:
     st.error(f"Ocurrió u    n error al procesar las fechas: {e}")
 # Agrupar por 'sc_fecha' y contar los 'ID PROMETEO' únicos
 
-asesores_unicos = filtered_df_2[~filtered_df_2['nombre_asesor'].isin(['TI INTEGRADOR','ANGIE AVALOS','ANA JURADO','Rosmery Enriquez'])]['nombre_asesor'].unique()
+asesores_unicos = filtered_df_2[~filtered_df_2['nombre_asesor'].isin(['TI INTEGRADOR','ANGIE AVALOS','ANA JURADO','Rosmery Enriquez','ANGIE JANETH ARIAS FERNANDEZ','Stefano Napuri','Jose Mendez','César Loayza','OMAR GONZALEZ','Lohana Rivera'])]['nombre_asesor'].unique()
 
 col1,col2=st.columns([1,3])
 with col1:
@@ -661,29 +661,6 @@ try:
     st.markdown(f'<h4 style="color:#01579b;font-weight:bold;">Consolidado por Asesor</h4>', unsafe_allow_html=True)
 
     st.dataframe(df_consolidado, use_container_width=True,height=530)
-        
-        
-        
-        
-        
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-
         
     st.markdown('<p style="font-weight:bold;">Crecimiento de GESTIÓN por Fechas</p>', unsafe_allow_html=True)
 
