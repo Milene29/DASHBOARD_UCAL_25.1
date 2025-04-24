@@ -578,7 +578,6 @@ try:
         asesores_a_mostrar = asesores_seleccionados
     else:
         asesores_a_mostrar = asesores_unicos
-    
     consolidado_dict = {
     'Métrica': ['Gestiones', 'Contacto', 'Gestion Unicos', 'Contacto Unicos',
                 'Valp Unicos (+VLL)', 'Valp Unicos', 'Perdidos Unicos', 'Pagos',
