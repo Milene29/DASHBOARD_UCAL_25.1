@@ -278,21 +278,35 @@ with st.sidebar:
      filtered_df = filtered_df[filtered_df['FLAG CONVO'] == Convo_seleccionado]
      filtered_df_2 = filtered_df_2[filtered_df_2['FLAG CONVO'] == Convo_seleccionado]
 
-nombre_mapping = {
-    "Daniel Zapata": "DANIEL ENRIQUE",
-    "Rosa Ugarte": "ROSA NATALIA",
-    "César Alberto Loayza Gutiérrez": "CÉSAR ALBERTO",
-    "Andrea Araujo Antara": "ANDREA",
-    "Cinthia Mariella Orosco": "CINTHIA",
-    "Angelica Iparraguirre": "ANGELICA",
-    "Ingrid Guillermo Rivera": "INGRID",
-    "Fiorella Lanegra": "FIORELLA",
-    "Erwyn Terie Vital Avila": "ERWIN TERIE",
-    "Leandro Urbina": "LEANDRO",
-    "Juan Pablo Gómez": "JUAN"
+nombre_mapping_1 = {
+    "ROSA NATALIA UGARTE CHAVEZ": "Rosa Ugarte",
+    "FIORELLA LANEGRA": "Fiorella Lanegra",
+    "SERGIO VALDERRAMA RODRIGUEZ": "Sergio Valderrama",
+    "ANGELICA IPARRAGUIRRE": "Angelica Iparraguirre",
+    "JUAN MANUEL CHIPANA": "Juan Chipana",
+    "CINTHIA OROSCO": "Cinthia Orosco",
+    "ERWIN TERIE VITAL AVILA": "Erwin Vital",
+    "DANIEL ENRIQUE ZAPATA ALVARADO": "Daniel Zapata",
+    "ANDREA ARAUJO ANTARA": "Andrea Araujo",
+    "INGRID GUILLERMO RIVERA": "Ingrid Guillermo",
+    "ANDREA ALEJANDRA CRISANTO NAVARRO": "Andrea Crisanto",
+    "STEFANO NAPURI": "Stefano Napuri",
+    "JANIRA DELGADO SALAZAR": "Janira Delgado",
+    "ROSMERY ENRIQUEZ": "Rosmery Enriquez",
+    "JOSE RAUL MENDEZ NONAJULCA": "Jose Mendez",
+    "JUAN GOMEZ": "Juan Gomez",
+    "CÉSAR ALBERTO LOAYZA GUTIÉRREZ": "César Loayza",
+    "LOHANA RIVERA": "Lohana Rivera"
 }
-
-data_pago['Asesor Homologado'] = data_pago['Asesor Homologado'].replace(nombre_mapping)
+nombre_mapping_2 = {
+    "Andrea Araujo Antara": "Andrea Araujo",
+    "Ingrid Guillermo Rivera": "Ingrid Guillermo",
+    "Juan Pablo Gómez": "Juan Gomez",
+    "Cinthia Mariella Orosco": "Cinthia Orosco",
+    "Sergio Valderrama Rodriguez": "Sergio Valderrama",
+}
+data_pago['Asesor Homologado'] = data_pago['Asesor Homologado'].replace(nombre_mapping_2)
+filtered_df_2['nombre_asesor'] = filtered_df_2['nombre_asesor'].replace(nombre_mapping_1)
 
 filtered_df_2 = filtered_df_2.rename(columns={'fecha_hora_accion': 'sc_fecha'})
 
@@ -321,7 +335,7 @@ except Exception as e:
     st.error(f"Ocurrió u    n error al procesar las fechas: {e}")
 # Agrupar por 'sc_fecha' y contar los 'ID PROMETEO' únicos
 
-asesores_unicos = filtered_df_2[~filtered_df_2['nombre_asesor'].isin(['TI INTEGRADOR'])]['nombre_asesor']
+asesores_unicos = filtered_df_2[~filtered_df_2['nombre_asesor'].isin(['TI INTEGRADOR','ANGIE AVALOS','ANA JURADO','Rosmery Enriquez'])]['nombre_asesor'].unique()
 
 col1,col2=st.columns([1,3])
 with col1:
@@ -331,7 +345,7 @@ with col2:
     st.write("")
 
             
-st.markdown(f'<h5 style="color:#01579b;font-weight:bold;">Métricas de Gestión - {agrupacion_seleccionada}</h5>', unsafe_allow_html=True)
+st.markdown(f'<h4 style="color:#01579b;font-weight:bold;">Métricas de Gestión - {agrupacion_seleccionada}</h4>', unsafe_allow_html=True)
 
 
 col1,col2=st.columns([1,3])
@@ -354,46 +368,47 @@ if asesores_seleccionados:
 
 # Agrupar por 'nombre_asesor' y contar los 'id_prometeo' únicos por fecha
 Leads_gestionados = (
-    filtered_data.groupby('sc_fecha')['id_prometeo'].count()
+    filtered_data.groupby(['sc_fecha', 'nombre_asesor'])['id_prometeo'].count()
 ).reset_index()
 # Renombrar columnas para claridad
-Leads_gestionados.columns = ['sc_fecha','unique_id_count']
+Leads_gestionados.columns = ['sc_fecha','nombre_asesor','unique_id_count']
 
 Leads_gestionados_unicos = (
-    filtered_data.groupby('sc_fecha')['id_prometeo'].nunique()
+    filtered_data.groupby(['sc_fecha', 'nombre_asesor'])['id_prometeo'].nunique()
 ).reset_index()
+
 # Renombrar columnas para claridad
-Leads_gestionados_unicos.columns = ['sc_fecha','unique_id_count']
+Leads_gestionados_unicos.columns = ['sc_fecha', 'nombre_asesor', 'unique_id_count']
 
 
 filtered_data_perdidos = filtered_df_2[filtered_df_2['desc_resultado_1'] == 'Perdido']
 
 Leads_perdidos_unicos = (
-    filtered_data_perdidos.groupby('sc_fecha')['id_prometeo'].nunique()
+    filtered_data_perdidos.groupby(['sc_fecha', 'nombre_asesor'])['id_prometeo'].nunique()
 ).reset_index()
 # Renombrar columnas para claridad
-Leads_perdidos_unicos.columns = ['sc_fecha','unique_id_count']
+Leads_perdidos_unicos.columns = ['sc_fecha', 'nombre_asesor', 'unique_id_count']
 
 
 filtered_data2= filtered_data[(filtered_data['desc_resultado_1'] != 'Sin contacto')  & (filtered_data['nombre_asesor'] != 'TI INTEGRADOR')  ]
 
 Leads_contactos = (
-    filtered_data2.groupby('sc_fecha')['id_prometeo']
+    filtered_data2.groupby(['sc_fecha', 'nombre_asesor'])['id_prometeo']
     .count()
 )
 Leads_contactos = Leads_contactos.reset_index()
 # Renombrar columnas para claridad
-Leads_contactos.columns = ['sc_fecha','unique_id_count']
+Leads_contactos.columns = ['sc_fecha', 'nombre_asesor', 'unique_id_count']
 
 
 Leads_contactos_unicos = (
-    filtered_data2.groupby('sc_fecha')['id_prometeo']
+    filtered_data2.groupby(['sc_fecha', 'nombre_asesor'])['id_prometeo']
     .nunique()
     .reset_index()
 )
 
 # Renombrar columnas para más claridad
-Leads_contactos_unicos.columns = ['sc_fecha', 'unique_id_count']
+Leads_contactos_unicos.columns = ['sc_fecha', 'nombre_asesor', 'unique_id_count']
 # Mostrar el resultado
 
 # Filtrar los datos según las condiciones proporcionadas
@@ -407,13 +422,13 @@ filtered_data_vll = filtered_data[
 ]
 # Agrupar por 'sc_fecha' y contar los valores únicos de 'id_prometeo'
 Leads_valp = (
-    filtered_data3.groupby('sc_fecha')['id_prometeo']
+    filtered_data3.groupby(['sc_fecha', 'nombre_asesor'])['id_prometeo']
     .nunique()
     .reset_index(name='unique_id_count')  # Convertir a DataFrame y nombrar la columna
 )
-
+print(Leads_valp)
 Leads_valp_vll = (
-    filtered_data_vll.groupby('sc_fecha')['id_prometeo']
+    filtered_data_vll.groupby(['sc_fecha', 'nombre_asesor'])['id_prometeo']
     .nunique()
     .reset_index(name='unique_id_count')  # Convertir a DataFrame y nombrar la columna
 )
@@ -423,7 +438,7 @@ data_pago['Fecha de Pago de Boleta'] = pd.to_datetime(data_pago['Fecha de Pago']
 data_pago['sc_fecha'] = data_pago['Fecha de Pago de Boleta'].dt.date
 
 Leads_pagos = (
-    data_pago.groupby('sc_fecha')['ID PROMETEO']
+    data_pago.groupby(['sc_fecha', 'ASESOR HOMOLOGADO'])['ID PROMETEO']
     .nunique()
     .reset_index(name='unique_id_count')  # Convertir a DataFrame y nombrar la columna
 )
@@ -436,16 +451,16 @@ try:
     Leads_pagos = fecha_completa_df.merge(Leads_pagos, on='sc_fecha', how='left')
     # Rellenar valores NaN con 0 (fechas sin pagos)
     Leads_pagos['unique_id_count'] = Leads_pagos['unique_id_count'].fillna(0).astype(int)
-    Leads_pagos.columns = ['sc_fecha','unique_id_count']
+    Leads_pagos.columns = ['sc_fecha','nombre_asesor','unique_id_count']
     # Verificar si el DataFrame tiene datos válidos
     if Leads_gestion_diaria.empty:
         st.error("No se encontraron datos válidos para las condiciones proporcionadas.")
     else:
         chart_data_dict = {
-        'Métrica': [ 'Gestiones', 'Contacto', 'Gestion Unicos','Contacto Unicos','Valp Unicos (+VLL)','Valp Unicos','Perdidos Unicos','Pagos','%Contacto Corriente','%Contacto','%Valp','%Pago','%Perdidos']
+        'Métrica': [ 'Gestiones', 'Contacto', 'Gestion Unicos','Contacto Unicos','Valp Unicos (+VLL)','Valp Unicos','Perdidos Unicos','Pagos','%Contacto Corriente','%Contacto','%Valp','%Perdidos','%Pago (Paso)','%Pago (Acum)']
     }
         chart_data_dict2 = {
-        'Métrica': ['%Contacto Corriente','%Contacto','%Valp','%Pago','%Perdidos']
+        'Métrica': ['%Contacto Corriente','%Contacto','%Valp','%Perdidos','%Pago (Paso)','%Pago (Acum)']
     }
         # Rellenar con datos desde los DataFrames originales
 
@@ -479,27 +494,28 @@ try:
             contac_corr=(contactos / leads_asesor) * 100 if contactos > 0 and leads_asesor > 0 else 0
             contac=(contactos_unicos / leads_asesor_unicos) * 100 if contactos_unicos > 0 and leads_asesor_unicos > 0 else 0
             valp_con = (valp / contactos_unicos) * 100 if valp > 0 and contactos_unicos > 0 else 0
-            pago_valp=(pagos/valp)* 100 if valp > 0 and pagos > 0 else 0
+            pago_valp_paso=(pagos/valp)* 100 if valp > 0 and pagos > 0 else 0
+            pago_valp_acumu=(pagos/contactos_unicos)* 100 if contactos_unicos > 0 and pagos > 0 else 0
             perd_cont=(perdidos/contactos_unicos)* 100 if perdidos > 0 and contactos_unicos > 0 else 0
             
             # Agregar datos al diccionario
             if fecha not in chart_data_dict:
                 chart_data_dict[fecha] = []
                 chart_data_dict2[fecha] = []
-            chart_data_dict[fecha].extend([ leads_asesor, contactos,leads_asesor_unicos, contactos_unicos,valp_vll,valp, perdidos,pagos,contac_corr,contac,valp_con,pago_valp,perd_cont])
-            chart_data_dict2[fecha].extend([contac_corr,contac,valp_con,pago_valp,perd_cont])
+            chart_data_dict[fecha].extend([ leads_asesor, contactos,leads_asesor_unicos, contactos_unicos,valp_vll,valp, perdidos,pagos,contac_corr,contac,valp_con,perd_cont,pago_valp_paso,pago_valp_acumu])
+            chart_data_dict2[fecha].extend([contac_corr,contac,valp_con,perd_cont,pago_valp_paso,pago_valp_acumu])
 
                 
         # Convertir el diccionario en un DataFrame
         chart_data2 = pd.DataFrame(chart_data_dict).set_index('Métrica')
         chart_data3 = pd.DataFrame(chart_data_dict2).set_index('Métrica')
 
-    chart_data1 = chart_data3.loc[['%Contacto Corriente','%Contacto','%Valp','%Pago','%Perdidos']].T
+    chart_data1 = chart_data3.loc[['%Contacto Corriente','%Contacto','%Valp','%Perdidos','%Pago (Paso)','%Pago (Acum)']].T
     # Convertir índice a tipo datetime si no lo está
     chart_data1.index = pd.to_datetime(chart_data1.index)
     chart_data1 = chart_data1[~chart_data1.index.dayofweek.isin([5, 6])]
 
-    chart_data3 = chart_data3.loc[['%Pago']].T
+    chart_data3 = chart_data3.loc[['%Pago (Acum)']].T
     chart_data3.index = pd.to_datetime(chart_data3.index)
     chart_data3 = chart_data3[~chart_data3.index.dayofweek.isin([5, 6])]
 
@@ -510,7 +526,7 @@ try:
 
 
     def agrupar_por(fecha_df, agrupacion_seleccionada):
-        metricas_porcentaje = ['%Contacto Corriente','%Contacto','%Valp','%Pago','%Perdidos']
+        metricas_porcentaje = ['%Contacto Corriente','%Contacto','%Valp','%Perdidos','%Pago (Paso)','%Pago (Acum)']
 
         if agrupacion_seleccionada == "Semana":
             agrupador = fecha_df.columns.to_series().dt.to_period('W').apply(lambda r: r.start_time)
@@ -542,7 +558,7 @@ try:
     chart_data_grouped = agrupar_por(chart_data2, agrupacion_seleccionada)
             
     for col in chart_data_grouped.index:
-        if col in [ '%Contacto Corriente','%Contacto','%Valp','%Pago','%Perdidos']:  # Asumiendo que estas son las filas donde están los porcentajes
+        if col in [ '%Contacto Corriente','%Contacto','%Valp','%Perdidos','%Pago (Paso)','%Pago (Acum)']:  # Asumiendo que estas son las filas donde están los porcentajes
             for fecha in chart_data_grouped.columns:
                 if chart_data_grouped.loc[col, fecha] > 0:  # Asegurar que el valor no sea 0 antes de formatearlo
                         chart_data_grouped.loc[col, fecha] = "{:.1f}%".format(chart_data_grouped.loc[col, fecha])
@@ -554,7 +570,122 @@ try:
                     chart_data_grouped.loc[col, fecha] = "{:.0f}".format(chart_data_grouped.loc[col, fecha])
 
 
-    st.dataframe(chart_data_grouped, use_container_width=False,height=490)
+    st.dataframe(chart_data_grouped, use_container_width=False,height=530)
+        
+        
+        # Filtrar por asesores seleccionados (si hay selección)
+    if asesores_seleccionados:  # si estás usando st.multiselect
+        asesores_a_mostrar = asesores_seleccionados
+    else:
+        asesores_a_mostrar = asesores_unicos
+    
+    consolidado_dict = {
+    'Métrica': ['Gestiones', 'Contacto', 'Gestion Unicos', 'Contacto Unicos',
+                'Valp Unicos (+VLL)', 'Valp Unicos', 'Perdidos Unicos', 'Pagos',
+                '%Contacto Corriente', '%Contacto', '%Valp', '%Perdidos',
+                '%Pago (Paso)', '%Pago (Acum)']
+    }
+    
+    
+    for asesor in asesores_a_mostrar:
+        # Filtrar todos los DataFrames por asesor y fecha
+        gestion = Leads_gestionados[
+            (Leads_gestionados['nombre_asesor'] == asesor) &
+            (Leads_gestionados['sc_fecha'] >= min_fecha) &
+            (Leads_gestionados['sc_fecha'] <= max_fecha)
+        ]['unique_id_count'].sum()
+
+        contacto = Leads_contactos[
+            (Leads_contactos['nombre_asesor'] == asesor) &
+            (Leads_contactos['sc_fecha'] >= min_fecha) &
+            (Leads_contactos['sc_fecha'] <= max_fecha)
+        ]['unique_id_count'].sum()
+
+        gestion_unicos = Leads_gestionados_unicos[
+            (Leads_gestionados_unicos['nombre_asesor'] == asesor) &
+            (Leads_gestionados_unicos['sc_fecha'] >= min_fecha) &
+            (Leads_gestionados_unicos['sc_fecha'] <= max_fecha)
+        ]['unique_id_count'].sum()
+
+        contacto_unicos = Leads_contactos_unicos[
+            (Leads_contactos_unicos['nombre_asesor'] == asesor) &
+            (Leads_contactos_unicos['sc_fecha'] >= min_fecha) &
+            (Leads_contactos_unicos['sc_fecha'] <= max_fecha)
+        ]['unique_id_count'].sum()
+
+        valp_vll = Leads_valp_vll[
+            (Leads_valp_vll['nombre_asesor'] == asesor) &
+            (Leads_valp_vll['sc_fecha'] >= min_fecha) &
+            (Leads_valp_vll['sc_fecha'] <= max_fecha)
+        ]['unique_id_count'].sum()
+
+        valp = Leads_valp[
+            (Leads_valp['nombre_asesor'] == asesor) &
+            (Leads_valp['sc_fecha'] >= min_fecha) &
+            (Leads_valp['sc_fecha'] <= max_fecha)
+        ]['unique_id_count'].sum()
+
+        perdidos = Leads_perdidos_unicos[
+            (Leads_perdidos_unicos['nombre_asesor'] == asesor) &
+            (Leads_perdidos_unicos['sc_fecha'] >= min_fecha) &
+            (Leads_perdidos_unicos['sc_fecha'] <= max_fecha)
+        ]['unique_id_count'].sum()
+
+        pagos = Leads_pagos[
+            (Leads_pagos['nombre_asesor'] == asesor) &
+            (Leads_pagos['sc_fecha'] >= min_fecha) &
+            (Leads_pagos['sc_fecha'] <= max_fecha)
+        ]['unique_id_count'].sum()
+        
+
+        # Cálculos de porcentaje
+        contac_corr = (contacto / gestion) * 100 if gestion > 0 else 0
+        contac_pct = (contacto_unicos / gestion_unicos) * 100 if gestion_unicos > 0 else 0
+        valp_pct = (valp / contacto_unicos) * 100 if contacto_unicos > 0 else 0
+        perd_pct = (perdidos / contacto_unicos) * 100 if contacto_unicos > 0 else 0
+        pago_paso = (pagos / valp) * 100 if valp > 0 else 0
+        pago_acum = (pagos / contacto_unicos) * 100 if contacto_unicos > 0 else 0
+
+        consolidado_dict[asesor] = [
+            gestion, contacto, gestion_unicos, contacto_unicos, valp_vll, valp,
+            perdidos, pagos, contac_corr, contac_pct, valp_pct, perd_pct,
+            pago_paso, pago_acum
+        ]
+    df_consolidado = pd.DataFrame(consolidado_dict).set_index('Métrica')
+
+    # Formatear porcentajes
+    for metrica in ['%Contacto Corriente','%Contacto','%Valp','%Perdidos','%Pago (Paso)','%Pago (Acum)']:
+        df_consolidado.loc[metrica] = df_consolidado.loc[metrica].apply(lambda x: f"{x:.1f}%" if x > 0 else "0%")
+    for metrica in ['Gestiones', 'Contacto', 'Gestion Unicos','Contacto Unicos','Valp Unicos (+VLL)','Valp Unicos','Perdidos Unicos','Pagos']:
+        df_consolidado.loc[metrica] = df_consolidado.loc[metrica].apply(lambda x: f"{int(x)}")
+
+    st.markdown(f'<h4 style="color:#01579b;font-weight:bold;">Consolidado por Asesor</h4>', unsafe_allow_html=True)
+
+    st.dataframe(df_consolidado, use_container_width=True)
+        
+        
+        
+        
+        
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+
+        
     st.markdown('<p style="font-weight:bold;">Crecimiento de GESTIÓN por Fechas</p>', unsafe_allow_html=True)
 
     col1, col2 = st.columns([1, 1])
