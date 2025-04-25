@@ -58,7 +58,7 @@ df, df_261,data2 ,data_espejo,data_pago,data_pago_251,data_pago_261= load_data()
 
 print("................................p´´´++++++++++++++++++++++")
 
-print(data_espejo.columns)
+print(data2["sc_campana"])
 # Verificar si los datos se cargaron correctamente
 if (df is None):
     st.error("Hubo un problema al cargar los datos. Por favor, revisa los archivos en Google Drive.")
@@ -97,6 +97,7 @@ else:
 
         # Filtro adicional por "sc_campana" si aplica
         if agrupacion_seleccionada == "25.2":
+            
             data2 = data2[data2["sc_campana"] == "2025-2"]
         elif agrupacion_seleccionada == "26.1":
             data2 = data2[data2["sc_campana"] == "2026-1"]
