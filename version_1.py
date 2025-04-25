@@ -335,7 +335,7 @@ except Exception as e:
     st.error(f"Ocurrió u    n error al procesar las fechas: {e}")
 # Agrupar por 'sc_fecha' y contar los 'ID PROMETEO' únicos
 
-asesores_unicos = filtered_df_2[~filtered_df_2['nombre_asesor'].isin(['TI INTEGRADOR','ANGIE AVALOS','ANA JURADO','Rosmery Enriquez','ANGIE JANETH ARIAS FERNANDEZ','Stefano Napuri','Jose Mendez','César Loayza','OMAR GONZALEZ','Lohana Rivera'])]['nombre_asesor'].unique()
+asesores_unicos = filtered_df_2[~filtered_df_2['nombre_asesor'].isin(['TI INTEGRADOR','ANGIE AVALOS','ANA JURADO','Rosmery Enriquez','ANGIE JANETH ARIAS FERNANDEZ','Stefano Napuri','Jose Mendez','César Loayza','OMAR GONZALES','Lohana Rivera','YADIRA ALANIA','Juan Gomez'])]['nombre_asesor'].unique()
 
 col1,col2=st.columns([1,3])
 with col1:
@@ -457,7 +457,7 @@ try:
         st.error("No se encontraron datos válidos para las condiciones proporcionadas.")
     else:
         chart_data_dict = {
-        'Métrica': [ 'Gestiones', 'Contacto', 'Gestion Unicos','Contacto Unicos','Valp Unicos (+VLL)','Valp Unicos','Perdidos Unicos','Pagos','%Contacto Corriente','%Contacto','%Valp','%Perdidos','%Pago (Paso)','%Pago (Acum)']
+        'Métrica': [ 'Gestiones','%Contacto Corriente', 'Contacto', 'Gestion Unicos','%Contacto','Contacto Unicos','%Valp','Valp Unicos (+VLL)','Valp Unicos','Perdidos Unicos','%Perdidos','Pagos','%Pago (Paso)','%Pago (Acum)']
     }
         chart_data_dict2 = {
         'Métrica': ['%Contacto Corriente','%Contacto','%Valp','%Perdidos','%Pago (Paso)','%Pago (Acum)']
@@ -502,9 +502,9 @@ try:
             if fecha not in chart_data_dict:
                 chart_data_dict[fecha] = []
                 chart_data_dict2[fecha] = []
-            chart_data_dict[fecha].extend([ leads_asesor, contactos,leads_asesor_unicos, contactos_unicos,valp_vll,valp, perdidos,pagos,contac_corr,contac,valp_con,perd_cont,pago_valp_paso,pago_valp_acumu])
+            chart_data_dict[fecha].extend([ leads_asesor, contac_corr,contactos,leads_asesor_unicos, contac,contactos_unicos,valp_con,valp_vll,valp, perdidos,perd_cont,pagos,pago_valp_paso,pago_valp_acumu])
             chart_data_dict2[fecha].extend([contac_corr,contac,valp_con,perd_cont,pago_valp_paso,pago_valp_acumu])
-
+    
                 
         # Convertir el diccionario en un DataFrame
         chart_data2 = pd.DataFrame(chart_data_dict).set_index('Métrica')
