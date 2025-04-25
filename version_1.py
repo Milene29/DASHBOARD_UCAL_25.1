@@ -89,9 +89,17 @@ else:
     with col3:
         st.write("")
     with col1:
-        agrupacion_seleccionada = st.selectbox("Campaña: ", ["25.2", "26.1"])
+        agrupacion_seleccionada = st.selectbox("Campaña: ", ["24.2","25.1","25.2", "26.1"])
+            # Selección del dataframe base
         df = df if agrupacion_seleccionada == "25.2" else df_261
-        data2= data2 if agrupacion_seleccionada == "25.2" else data_espejo
+        data2 = data2 if agrupacion_seleccionada in ["25.2", "26.1"] else data_espejo
+        data_pago = data_pago if agrupacion_seleccionada == "25.2" else data_pago_261
+
+        # Filtro adicional por "sc_campana" si aplica
+        if agrupacion_seleccionada == "25.2":
+            data2 = data2[data2["sc_campana"] == "2025-2"]
+        elif agrupacion_seleccionada == "26.1":
+            data2 = data2[data2["sc_campana"] == "2026-1"]
         data_pago=data_pago if agrupacion_seleccionada == "25.2" else data_pago_261
         data_pago['Asesor Homologado']=data_pago['ASESOR HOMOLOGADO'] if agrupacion_seleccionada == "25.2" else data_pago['ASESOR HOMOLOGADO']
         data_pago['Fecha de Pago']=data_pago['FECHA DE PAGO COMPLETO'] if agrupacion_seleccionada == "25.2" else data_pago['FECHA DE PAGO COMPLETO']
@@ -570,8 +578,7 @@ try:
                     chart_data_grouped.loc[col, fecha] = "{:.0f}".format(chart_data_grouped.loc[col, fecha])
 
 
-    st.dataframe(chart_data_grouped, use_container_width=False,height=530)
-        
+    st.dataframe(chart_data_grouped, use_container_width=False,height=530)       
         
         # Filtrar por asesores seleccionados (si hay selección)
     if asesores_seleccionados:  # si estás usando st.multiselect
