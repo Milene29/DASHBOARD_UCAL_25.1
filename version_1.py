@@ -100,7 +100,8 @@ else:
             data2 = data2[data2["sc_campana"] == "2025-2"]
         elif agrupacion_seleccionada == "26.1":
             data2 = data2[data2["sc_campana"] == "2026-1"]
-        data_pago=data_pago if agrupacion_seleccionada == "25.2" else data_pago_261
+            data_pago=data_pago_261
+
         data_pago['Asesor Homologado']=data_pago['ASESOR HOMOLOGADO'] if agrupacion_seleccionada == "25.2" else data_pago['ASESOR HOMOLOGADO']
         data_pago['Fecha de Pago']=data_pago['FECHA DE PAGO COMPLETO'] if agrupacion_seleccionada == "25.2" else data_pago['FECHA DE PAGO COMPLETO']
 # Helper function to format numbers with commas
