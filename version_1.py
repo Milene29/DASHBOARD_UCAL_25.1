@@ -146,8 +146,6 @@ carr_mapping = {
 
 
 data_pago['Carrera'] = data_pago['CARRERA'].replace(carr_mapping)
-
-
 df['PROGRAMA'] = df['PROGRAMA'].fillna('SIN CARRERA')
 df['flg_convocatoria'] = df['FLAG CONVO']
 df['agrupacion_tipificacion_actual'] = df['STATUS DE GESTION']
