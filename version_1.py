@@ -90,7 +90,6 @@ else:
     with col1:
         agrupacion_seleccionada = st.selectbox("Campaña: ", ["24.2","25.1","25.2", "26.1"])
             # Selección del dataframe base
-        df = df if agrupacion_seleccionada == "25.2" else df_261
         data2 = data2 if agrupacion_seleccionada in ["25.2", "26.1"] else data_espejo
         print(data2.columns)
         # Filtro adicional por "sc_campana" si aplica
@@ -100,9 +99,11 @@ else:
         elif agrupacion_seleccionada == "26.1":
             data2 = data2[data2["sc_campana"] == "2026-1"]
             data_pago=data_pago_261
+            df = df_261 
         elif agrupacion_seleccionada == "25.1":
             data_espejo = data_espejo[data_espejo["sc_campana"] == "2025-1"]
             data_pago=data_pago_251
+
         elif agrupacion_seleccionada == "24.2":
             data_espejo = data_espejo[data_espejo["sc_campana"] == "2024-2"]
             data_pago=data_pago_251   
@@ -112,6 +113,7 @@ else:
         data_pago['CARRERA']=data_pago['CARRERA'] if agrupacion_seleccionada in ["25.2", "26.1"] else data_pago['Carrera']
         data_pago['HORARIO DE ESTUDIO']=data_pago['HORARIO DE ESTUDIO'] if agrupacion_seleccionada in ["25.2", "26.1"] else data_pago['Horario de Estudio']
         data_pago['ASESOR HOMOLOGADO']=data_pago['ASESOR HOMOLOGADO'] if agrupacion_seleccionada in ["25.2", "26.1"] else data_pago['Asesor Homologado']
+
 
 # Helper function to format numbers with commas
 def format_with_commas(number):
