@@ -194,7 +194,7 @@ if 'traslados_set' not in globals():
 
 print("termino flg_traslado") 
 
-
+data2['PROGRAMA']=data2['ult_programa_interes']
 with st.sidebar:
     st.header("Filtros")
     
@@ -207,7 +207,7 @@ with st.sidebar:
         carreras_disponibles = df['PROGRAMA'].dropna().unique()
         carreras_disponibles = [carrera for carrera in carreras_disponibles if carrera != "SIN CARRERA"]
 
-        carreras_disponibles2 = data2['ult_programa_interes'].dropna().unique()
+        carreras_disponibles2 = data2['PROGRAMA'].dropna().unique()
         carrera_seleccionada = st.selectbox("Selecciona una carrera",options=["Todas"] + list(carreras_disponibles))
 
     elif mundo_seleccionado != "SIN CARRERA":
