@@ -99,7 +99,7 @@ else:
         elif agrupacion_seleccionada == "26.1":
             data2 = data2[data2["sc_campana"] == "2026-1"]
             data_pago=data_pago_261
-            df = df 
+            df = df_261
         elif agrupacion_seleccionada == "25.1":
             data_espejo = data_espejo[data_espejo["sc_campana"] == "2025-1"]
             data_pago=data_pago_251
