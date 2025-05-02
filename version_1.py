@@ -99,7 +99,7 @@ else:
         elif agrupacion_seleccionada == "26.1":
             data2 = data2[data2["sc_campana"] == "2026-1"]
             data_pago=data_pago_261
-            df = df_261 
+            df = df 
         elif agrupacion_seleccionada == "25.1":
             data_espejo = data_espejo[data_espejo["sc_campana"] == "2025-1"]
             data_pago=data_pago_251
@@ -305,6 +305,7 @@ nombre_mapping_1 = {
     "CINTHIA OROSCO": "Cinthia Orosco",
     "ERWIN TERIE VITAL AVILA": "Erwin Vital",
     "DANIEL ENRIQUE ZAPATA ALVARADO": "Daniel Zapata",
+    "JUAN MANUEL RODRIGUEZ CHIPANA": "Juan Manuel",
     "ANDREA ARAUJO ANTARA": "Andrea Araujo",
     "INGRID GUILLERMO RIVERA": "Ingrid Guillermo",
     "ANDREA ALEJANDRA CRISANTO NAVARRO": "Andrea Crisanto",
