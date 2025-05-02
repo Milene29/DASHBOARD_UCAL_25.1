@@ -31,15 +31,17 @@ def load_data():
             if archivo_name.endswith(f"bbdd_ucal_['2025-2']_conv_(0,1)_pagantes_(0,1)_fecha_{today_string}.xlsx") and df is None:
                 df = pd.read_excel(io.BytesIO(archivo_content), engine='openpyxl')
                 print("Archivo Excel cargado correctamente.")
-            elif archivo_name.endswith(f"bbdd_ucal_['2026-1']_conv_(0,1)_pagantes_(0,1)_fecha_{today_string}.xlsx") and df is None:
+            elif  f"bbdd_ucal_['2026-1']" in archivo_name and df_261 is None:
                 df_261 = pd.read_excel(io.BytesIO(archivo_content), engine='openpyxl')
                 print("Archivo Excel 2026.1 cargado correctamente.")
             elif '2025-2' in archivo_name:
                 data2 = pd.read_csv(io.BytesIO(archivo_content), dtype=str)
                 data2.columns = data2.columns.str.strip().str.replace(' ', '_')
+                print("data actual cargada")
             elif '2024-2' in archivo_name:
                 data_espejo = pd.read_csv(io.BytesIO(archivo_content), dtype=str)
                 data_espejo.columns = data_espejo.columns.str.strip().str.replace(' ', '_')
+                print("data espejo cargada")
             
             elif archivo_content.startswith(b'<!DOCTYPE html>'):
                 print("Error: Se intentó descargar una página en lugar de un CSV")
@@ -54,12 +56,12 @@ def load_data():
 if st.button('Reiniciar'):
     st.cache_data.clear()  # Limpiar caché de datos
     st.rerun()  
-df, df_261,data2 ,data_espejo,data_pago_252,data_pago_251,data_pago_261= load_data()
+df252, df_261,data2 ,data_espejo,data_pago_252,data_pago_251,data_pago_261= load_data()
 
 print("................................p´´´++++++++++++++++++++++")
 
 # Verificar si los datos se cargaron correctamente
-if (df is None):
+if (df_261 is None):
     st.error("Hubo un problema al cargar los datos. Por favor, revisa los archivos en Google Drive.")
 else:
     # Título del dashboard con formato de Streamlit
@@ -96,6 +98,7 @@ else:
         if agrupacion_seleccionada == "25.2": 
             data2 = data2[data2["sc_campana"] == "2025-2"]
             data_pago=data_pago_252
+            df=df252
         elif agrupacion_seleccionada == "26.1":
             data2 = data2[data2["sc_campana"] == "2026-1"]
             data_pago=data_pago_261
@@ -103,10 +106,12 @@ else:
         elif agrupacion_seleccionada == "25.1":
             data_espejo = data_espejo[data_espejo["sc_campana"] == "2025-1"]
             data_pago=data_pago_251
+            df=df252
 
         elif agrupacion_seleccionada == "24.2":
             data_espejo = data_espejo[data_espejo["sc_campana"] == "2024-2"]
-            data_pago=data_pago_251   
+            data_pago=data_pago_251 
+            df=df252  
 
         data_pago['Asesor Homologado']=data_pago['ASESOR HOMOLOGADO'] if agrupacion_seleccionada in ["25.2", "26.1"] else data_pago['Asesor Homologado']
         data_pago['Fecha de Pago']=data_pago['FECHA DE PAGO COMPLETO'] if agrupacion_seleccionada in ["25.2", "26.1"] else data_pago['Fecha de Pago']
@@ -155,6 +160,7 @@ carr_mapping = {
     "Comunicación": "COMUNICACIÓN",
     "Marketing e Innovación": "MARKETING E INNOVACIÓN"
 }
+
 
 
 data_pago['Carrera'] = data_pago['CARRERA'].replace(carr_mapping)
