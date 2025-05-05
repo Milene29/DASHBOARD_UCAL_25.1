@@ -99,6 +99,7 @@ else:
             data2 = data2[data2["sc_campana"] == "2025-2"]
             data_pago=data_pago_252
             df=df252
+            
         elif agrupacion_seleccionada == "26.1":
             data2 = data2[data2["sc_campana"] == "2026-1"]
             data_pago=data_pago_261
@@ -107,6 +108,7 @@ else:
             data_espejo = data_espejo[data_espejo["sc_campana"] == "2025-1"]
             data_pago=data_pago_251
             df=df252
+            
 
         elif agrupacion_seleccionada == "24.2":
             data_espejo = data_espejo[data_espejo["sc_campana"] == "2024-2"]
@@ -333,11 +335,10 @@ nombre_mapping_2 = {
 data_pago['Asesor Homologado'] = data_pago['Asesor Homologado'].replace(nombre_mapping_2)
 filtered_df_2['nombre_asesor'] = filtered_df_2['nombre_asesor'].replace(nombre_mapping_1)
 
-filtered_df_2 = filtered_df_2.rename(columns={'fecha_hora_accion': 'sc_fecha'})
-
 try:
     min_fecha =  filtered_df_2['sc_fecha'].min()
     max_fecha = filtered_df_2['sc_fecha'].max()
+    print(max_fecha)
     print(min_fecha)
     with col2:
         rango_fechas = st.date_input(
