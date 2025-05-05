@@ -119,7 +119,6 @@ else:
         data_pago['Fecha de Pago']=data_pago['FECHA DE PAGO COMPLETO'] if agrupacion_seleccionada in ["25.2", "26.1"] else data_pago['Fecha de Pago']
         data_pago['CARRERA']=data_pago['CARRERA'] if agrupacion_seleccionada in ["25.2", "26.1"] else data_pago['Carrera']
         data_pago['HORARIO DE ESTUDIO']=data_pago['HORARIO DE ESTUDIO'] if agrupacion_seleccionada in ["25.2", "26.1"] else data_pago['Horario de Estudio']
-        data_pago['ASESOR HOMOLOGADO']=data_pago['ASESOR HOMOLOGADO'] if agrupacion_seleccionada in ["25.2", "26.1"] else data_pago['Asesor Homologado']
 
 
 # Helper function to format numbers with commas
@@ -309,7 +308,7 @@ nombre_mapping_1 = {
     "FIORELLA LANEGRA": "Fiorella Lanegra",
     "SERGIO VALDERRAMA RODRIGUEZ": "Sergio Valderrama",
     "ANGELICA IPARRAGUIRRE": "Angelica Iparraguirre",
-    "JUAN MANUEL CHIPANA": "Juan Chipana",
+    "JUAN MANUEL RODRIGUEZ CHIPANA": "Juan Chipana",
     "CINTHIA OROSCO": "Cinthia Orosco",
     "ERWIN TERIE VITAL AVILA": "Erwin Vital",
     "DANIEL ENRIQUE ZAPATA ALVARADO": "Daniel Zapata",
@@ -331,6 +330,7 @@ nombre_mapping_2 = {
     "Juan Pablo Gómez": "Juan Gomez",
     "Cinthia Mariella Orosco": "Cinthia Orosco",
     "Sergio Valderrama Rodriguez": "Sergio Valderrama",
+    "Juan Manuel Rodríguez": "Juan Manuel",
 }
 data_pago['Asesor Homologado'] = data_pago['Asesor Homologado'].replace(nombre_mapping_2)
 filtered_df_2['nombre_asesor'] = filtered_df_2['nombre_asesor'].replace(nombre_mapping_1)
@@ -464,10 +464,11 @@ data_pago['Fecha de Pago de Boleta'] = pd.to_datetime(data_pago['Fecha de Pago']
 data_pago['sc_fecha'] = data_pago['Fecha de Pago de Boleta'].dt.date
 
 Leads_pagos = (
-    data_pago.groupby(['sc_fecha', 'ASESOR HOMOLOGADO'])['ID PROMETEO']
+    data_pago.groupby(['sc_fecha', 'Asesor Homologado'])['ID PROMETEO']
     .nunique()
     .reset_index(name='unique_id_count')  # Convertir a DataFrame y nombrar la columna
 )
+
 # Convertir a DataFrame con formato datetime.date
 try:
     fecha_completa = pd.date_range(start=rango_fechas[0], end=rango_fechas[1])
