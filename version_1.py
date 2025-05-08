@@ -90,35 +90,35 @@ else:
     with col3:
         st.write("")
     with col1:
-        agrupacion_seleccionada = st.selectbox("Campaña: ", ["24.2","25.1","25.2", "26.1"])
+        campana_seleccionada = st.selectbox("Campaña: ", ["24.2","25.1","25.2", "26.1"])
             # Selección del dataframe base
-        data2 = data2 if agrupacion_seleccionada in ["25.2", "26.1"] else data_espejo
+        data2 = data2 if campana_seleccionada in ["25.2", "26.1"] else data_espejo
         print(data2.columns)
         # Filtro adicional por "sc_campana" si aplica
-        if agrupacion_seleccionada == "25.2": 
+        if campana_seleccionada == "25.2": 
             data2 = data2[data2["sc_campana"] == "2025-2"]
             data_pago=data_pago_252
             df=df252
             
-        elif agrupacion_seleccionada == "26.1":
+        elif campana_seleccionada == "26.1":
             data2 = data2[data2["sc_campana"] == "2026-1"]
             data_pago=data_pago_261
             df = df_261
-        elif agrupacion_seleccionada == "25.1":
+        elif campana_seleccionada == "25.1":
             data_espejo = data_espejo[data_espejo["sc_campana"] == "2025-1"]
             data_pago=data_pago_251
             df=df252
             
 
-        elif agrupacion_seleccionada == "24.2":
+        elif campana_seleccionada == "24.2":
             data_espejo = data_espejo[data_espejo["sc_campana"] == "2024-2"]
             data_pago=data_pago_251 
             df=df252  
 
-        data_pago['Asesor Homologado']=data_pago['ASESOR HOMOLOGADO'] if agrupacion_seleccionada in ["25.2", "26.1"] else data_pago['Asesor Homologado']
-        data_pago['Fecha de Pago']=data_pago['FECHA DE PAGO COMPLETO'] if agrupacion_seleccionada in ["25.2", "26.1"] else data_pago['Fecha de Pago']
-        data_pago['CARRERA']=data_pago['CARRERA'] if agrupacion_seleccionada in ["25.2", "26.1"] else data_pago['Carrera']
-        data_pago['HORARIO DE ESTUDIO']=data_pago['HORARIO DE ESTUDIO'] if agrupacion_seleccionada in ["25.2", "26.1"] else data_pago['Horario de Estudio']
+        data_pago['Asesor Homologado']=data_pago['ASESOR HOMOLOGADO'] if campana_seleccionada in ["25.2", "26.1"] else data_pago['Asesor Homologado']
+        data_pago['Fecha de Pago']=data_pago['FECHA DE PAGO COMPLETO'] if campana_seleccionada in ["25.2", "26.1"] else data_pago['Fecha de Pago']
+        data_pago['CARRERA']=data_pago['CARRERA'] if campana_seleccionada in ["25.2", "26.1"] else data_pago['Carrera']
+        data_pago['HORARIO DE ESTUDIO']=data_pago['HORARIO DE ESTUDIO'] if campana_seleccionada in ["25.2", "26.1"] else data_pago['Horario de Estudio']
 
 
 # Helper function to format numbers with commas
@@ -361,7 +361,7 @@ except Exception as e:
     st.error(f"Ocurrió u    n error al procesar las fechas: {e}")
 # Agrupar por 'sc_fecha' y contar los 'ID PROMETEO' únicos
 
-asesores_unicos = filtered_df_2[~filtered_df_2['nombre_asesor'].isin(['TI INTEGRADOR','ANGIE AVALOS','ANA JURADO','Rosmery Enriquez','ANGIE JANETH ARIAS FERNANDEZ','Stefano Napuri','Jose Mendez','César Loayza','OMAR GONZALES','Lohana Rivera','YADIRA ALANIA','Juan Gomez'])]['nombre_asesor'].unique()
+asesores_unicos = filtered_df_2[~filtered_df_2['nombre_asesor'].isin(['TI INTEGRADOR','ANGIE AVALOS','ANA JURADO','Rosmery Enriquez','ANGIE JANETH ARIAS FERNANDEZ','Stefano Napuri','Jose Mendez','César Loayza','OMAR GONZALES','Lohana Rivera','YADIRA ALANIA','Juan Gomez','DENISE YANAY'])]['nombre_asesor'].unique()
 
 col1,col2=st.columns([1,3])
 with col1:
@@ -687,7 +687,206 @@ try:
     st.markdown(f'<h4 style="color:#01579b;font-weight:bold;">Consolidado por Asesor</h4>', unsafe_allow_html=True)
 
     st.dataframe(df_consolidado, use_container_width=True,height=530)
+    
+    
+
+    # Título del dashboard
+
+    st.markdown(f'<h4 style="color:#01579b;font-weight:bold;">Gestión último Status por Asesor</h4>', unsafe_allow_html=True)
+    columa1, columa2 = st.columns([1, 1])   
+    with columa1:
+        opcion_filtro = st.radio(
+            "Mostrar asesores por:",
+            options=["Asesores Activos","Todos"]
+        )
+    with columa2:
+        vll_filtro = st.radio(
+            "Filtro Vps:",
+            options=["Sin Volver a Llamar","Con Volver a Llamar"]
+        )
+    
+    #if asesores_seleccionados:  # si estás usando st.multiselect
+     #   asesores_a_mostrar = asesores_seleccionados
+    #else:
+     #   asesores_a_mostrar = asesores_unicos
+
+    if (opcion_filtro=="Asesores Activos"):
+        if campana_seleccionada == "25.2":
+            asesores=["Andrea Araujo","Sergio Valderrama","Angelica Iparraguirre","Rosa Ugarte","Juan Manuel","Fiorella Lanegra"]
+        else:
+            asesores=["Cinthia Orosco","Erwin Vital","Daniel Zapata"]
+    else:
+        if asesores_seleccionados:
+            asesores=asesores_seleccionados
+        else:
+            asesores=asesores_unicos
+    
+    if (vll_filtro=="Con Volver a Llamar"):
+        no_efectivos = {"Sin contacto", 1, 2, 3, 4, None}
+    else:
+        no_efectivos = {"Sin contacto", 1, 2, 3, 4, None,"Volver a llamar"}
+            
+    filtered_data_2= filtered_data[filtered_data['nombre_asesor'].isin(asesores)]
+    Leads_pagos= Leads_pagos[Leads_pagos['nombre_asesor'].isin(asesores)]
+    print("holaaaaaaaaaaaaaaa")
+    print(filtered_data_2.columns)
+
+        # Definición de categorías
+    
+    positivos = ["Evaluando", "Interesado", "Registrado a evento", "Se inscribio", "Pagante", "Promesa de pago"]
+    negativos = ["Perdido", "Black List"]
+    
+    volver_llamar=["Volver a llamar"]
+    filtered_data_2['sc_fecha'] = pd.to_datetime(filtered_data_2['sc_fecha'])
+    data_contacto = filtered_data_2[~filtered_data_2["desc_resultado_1"].isin(no_efectivos)]
+    ultimos_diarios = data_contacto.sort_values("sc_fecha").groupby(["sc_fecha", "nombre_asesor", "id_prometeo"]).last().reset_index()
+
+    pagos = Leads_pagos[
+            (Leads_pagos['nombre_asesor'] == asesor) &
+            (Leads_pagos['sc_fecha'] >= min_fecha) &
+            (Leads_pagos['sc_fecha'] <= max_fecha)
+        ]['unique_id_count'].sum()
+    
+    def generar_resumen(df_campaña, data_pago):
+        id_unicos = df_campaña.groupby("nombre_asesor")["id_prometeo"].nunique().rename("LEADS GESTIONADOS")
+
+        ids_contacto = df_campaña[~df_campaña["desc_resultado_1"].isin(no_efectivos)]
+        contacto_efectivo = ids_contacto.groupby("nombre_asesor")["id_prometeo"].nunique().rename("CONTACTO EFECTIVO")
+
+        df_valid = df_campaña[~df_campaña["desc_resultado_1"].isin(no_efectivos)].copy()
+        df_valid = df_valid.sort_values("sc_fecha")
+        ultimos = df_valid.groupby(["nombre_asesor", "id_prometeo"]).last().reset_index()
+
+        valoracion_positiva = ultimos[ultimos["desc_resultado_1"].isin(positivos)] \
+            .groupby("nombre_asesor")["id_prometeo"].nunique().rename("VALORACIÓN POSITIVA")
+
+        perdido_blacklist = ultimos[ultimos["desc_resultado_1"].isin(negativos)] \
+            .groupby("nombre_asesor")["id_prometeo"].nunique().rename("PERDIDO")
+
+        volver_a_llamar = ultimos[ultimos["desc_resultado_1"].isin(volver_llamar)] \
+            .groupby("nombre_asesor")["id_prometeo"].nunique().rename("VOLVER A LLAMAR")
+
+        # Procesar base de pagos externa
+        data_pago['Fecha de Pago de Boleta'] = pd.to_datetime(data_pago['Fecha de Pago'], format="%d/%m/%Y", errors='coerce')
+        data_pago['sc_fecha'] = data_pago['Fecha de Pago de Boleta'].dt.date
+        pagos = Leads_pagos.groupby("nombre_asesor")["unique_id_count"].nunique().rename("VENTA")
+        pagos.index.name = "nombre_asesor"
+
+        # Unir todas las métricas
+        resumen = pd.concat([
+            id_unicos,
+            contacto_efectivo,
+            valoracion_positiva,
+            perdido_blacklist,
+            pagos
+        ], axis=1).fillna(0)
+
+        # Calcular KPIs porcentuales
+        resumen["% LEAD A CONTACTO EFECTIVO"] = (resumen["CONTACTO EFECTIVO"] / resumen["LEADS GESTIONADOS"]) * 100
+        resumen["% CONTACTO EFECTIVO A VP"] = (resumen["VALORACIÓN POSITIVA"] / resumen["CONTACTO EFECTIVO"]) * 100
+        resumen["% CONTACTO EFECTIVO A PERDIDO"] = (resumen["PERDIDO"] / resumen["CONTACTO EFECTIVO"]) * 100
+        resumen["% VP A VENTA"] = (resumen["VENTA"] / resumen["VALORACIÓN POSITIVA"]) * 100
+
+        resumen = resumen.reset_index()
+        return resumen
+
+    # Generar resumen
+    def calcular_metricas_diarias(df, data_pago):
+        resumenes = []
+
+        for fecha in sorted(df['sc_fecha'].dt.date.unique()):
+            df_dia = df[df['sc_fecha'].dt.date == fecha]
+            pago_dia = data_pago[data_pago['sc_fecha'] == fecha]
+
+            resumen = generar_resumen(df_dia, pago_dia)
+            resumen["fecha"] = fecha
+            resumenes.append(resumen)
+
+        df_resumenes = pd.concat(resumenes)
+        return df_resumenes
+    resumen_df = generar_resumen(filtered_data_2, data_pago)
+
+    # Transponer para mostrar métricas como filas
+    resumen_transpuesto = resumen_df.set_index("nombre_asesor").T.copy()
+
+    # Formatear porcentajes
+    metricas_porcentaje = [
+        "% LEAD A CONTACTO EFECTIVO",
+        "% CONTACTO EFECTIVO A VP",
+        "% CONTACTO EFECTIVO A PERDIDO",
+        "% VP A VENTA"
+    ]
+
+    for metrica in metricas_porcentaje:
+        resumen_transpuesto.loc[metrica] = resumen_transpuesto.loc[metrica].apply(lambda x: f"{x:.1f}%" if x > 0 else "0%")
+
+    # Formato entero para métricas absolutas
+    metricas_enteras = [
+        "LEADS GESTIONADOS",
+        "CONTACTO EFECTIVO",
+        "VALORACIÓN POSITIVA",
+        "PERDIDO",
+        "VENTA"
+    ]
+
+    for metrica in metricas_enteras:
+        resumen_transpuesto.loc[metrica] = resumen_transpuesto.loc[metrica].apply(lambda x: f"{int(x)}")
+
+    # Orden final de las métricas
+    orden_metrico = [
+        "LEADS GESTIONADOS",
+        "% LEAD A CONTACTO EFECTIVO",
+        "CONTACTO EFECTIVO",
+        "% CONTACTO EFECTIVO A VP",
+        "VALORACIÓN POSITIVA",
+        "% CONTACTO EFECTIVO A PERDIDO",
+        "PERDIDO",
+        "% VP A VENTA",
+        "VENTA"
+    ]
+    resumen_transpuesto = resumen_transpuesto.loc[orden_metrico]
+
+    st.dataframe(resumen_transpuesto, use_container_width=True)
         
+        # Calcular métricas diarias
+    resumen_diario = calcular_metricas_diarias(filtered_data_2, data_pago)
+
+    # Convertir columnas de fecha y asesor en índices para pivotar
+    def preparar_chart(df, metrica):
+        pivot = df.pivot(index="fecha", columns="nombre_asesor", values=metrica).fillna(0)
+        return pivot
+
+        # Crear los 4 charts
+    chart1_data = preparar_chart(resumen_diario, "LEADS GESTIONADOS")
+    chart2_data = preparar_chart(resumen_diario, "% CONTACTO EFECTIVO A VP")
+    chart3_data = preparar_chart(resumen_diario, "% CONTACTO EFECTIVO A PERDIDO")
+    chart4_data = preparar_chart(resumen_diario, "% VP A VENTA")
+    
+        # Mostrar charts en dos filas
+    st.markdown(f'<h4 style="color:#01579b;font-weight:bold;">Evolutivo de Asesores por fecha</h4>', unsafe_allow_html=True)
+        # Primera fila
+    col1, col2 = st.columns(2)
+    with col1:
+
+        st.markdown(f'<h5 style="color:#230443;font-weight:bold;">Leads Gestionados</h5>', unsafe_allow_html=True)
+        st.line_chart(chart1_data)
+    with col2:
+        st.markdown(f'<h5 style="color:#230443;font-weight:bold;">%C. efectivo a vp</h5>', unsafe_allow_html=True)
+        st.line_chart(chart2_data)
+    
+    # Segunda fila
+    col3, col4 = st.columns(2)
+    with col3:
+        st.markdown(f'<h5 style="color:#230443;font-weight:bold;">%C. efectivo a perdido</h5>', unsafe_allow_html=True)
+        st.line_chart(chart3_data)
+    with col4:
+        st.markdown(f'<h5 style="color:#230443;font-weight:bold;">%Vp a venta</h5>', unsafe_allow_html=True)
+        st.line_chart(chart4_data)
+
+
+
+
+  
     st.markdown('<p style="font-weight:bold;">Crecimiento de GESTIÓN por Fechas</p>', unsafe_allow_html=True)
 
     col1, col2 = st.columns([1, 1])
