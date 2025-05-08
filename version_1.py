@@ -596,7 +596,6 @@ try:
                 if chart_data_grouped.loc[col, fecha] >= 0:  # Asegurar que el valor no sea 0 antes de formatearlo
                     chart_data_grouped.loc[col, fecha] = "{:.0f}".format(chart_data_grouped.loc[col, fecha])
 
-
     st.dataframe(chart_data_grouped, use_container_width=False,height=530)       
         
         # Filtrar por asesores seleccionados (si hay selección)
@@ -685,7 +684,7 @@ try:
         df_consolidado.loc[metrica] = df_consolidado.loc[metrica].apply(lambda x: f"{int(x)}")
 
     st.markdown(f'<h4 style="color:#01579b;font-weight:bold;">Consolidado por Asesor</h4>', unsafe_allow_html=True)
-
+    
     st.dataframe(df_consolidado, use_container_width=True,height=530)
     
     
@@ -728,7 +727,7 @@ try:
             
     filtered_data_2= filtered_data[filtered_data['nombre_asesor'].isin(asesores)]
     Leads_pagos= Leads_pagos[Leads_pagos['nombre_asesor'].isin(asesores)]
-    print("holaaaaaaaaaaaaaaa")
+ 
     print(filtered_data_2.columns)
 
         # Definición de categorías
@@ -818,7 +817,7 @@ try:
     ]
 
     for metrica in metricas_porcentaje:
-        resumen_transpuesto.loc[metrica] = resumen_transpuesto.loc[metrica].apply(lambda x: f"{x:.1f}%" if x > 0 else "0%")
+        resumen_transpuesto.loc[metrica] = resumen_transpuesto.loc[metrica].apply(lambda x: f"{x:.0f}%" if x > 0 else "0%")
 
     # Formato entero para métricas absolutas
     metricas_enteras = [
@@ -847,9 +846,42 @@ try:
     resumen_transpuesto = resumen_transpuesto.loc[orden_metrico]
 
     st.dataframe(resumen_transpuesto, use_container_width=True)
-        
-        # Calcular métricas diarias
-    resumen_diario = calcular_metricas_diarias(filtered_data_2, data_pago)
+    
+    def calcular_metricas_por_periodo(df, data_pago, agrupacion_seleccionada):
+        # Asegurar formato datetime y eliminar fechas inválidas
+        df['sc_fecha'] = pd.to_datetime(df['sc_fecha'], errors='coerce')
+        data_pago['Fecha de Pago'] = pd.to_datetime(data_pago['Fecha de Pago'], format="%d/%m/%Y", errors='coerce')
+        data_pago['sc_fecha'] = data_pago['Fecha de Pago'].dt.date
+        df = df.dropna(subset=['sc_fecha'])
+        data_pago = data_pago.dropna(subset=['sc_fecha'])
+
+        # Determinar frecuencia
+        if agrupacion_seleccionada == 'Semana':
+            df['periodo'] = df['sc_fecha'].dt.to_period('W').dt.start_time.dt.date
+            data_pago['periodo'] = pd.to_datetime(data_pago['sc_fecha']).dt.to_period('W').dt.start_time.dt.date
+        elif agrupacion_seleccionada == 'Mes':
+            df['periodo'] = df['sc_fecha'].dt.to_period('M').dt.to_timestamp().dt.date
+            data_pago['periodo'] = pd.to_datetime(data_pago['sc_fecha']).dt.to_period('M').dt.to_timestamp().dt.date
+        else:
+            df['periodo'] = df['sc_fecha']
+            data_pago['periodo'] = pd.to_datetime(data_pago['sc_fecha'])
+
+        resumenes = []
+
+        for periodo in sorted(df['periodo'].unique()):
+            df_periodo = df[df['periodo'] == periodo]
+            pago_periodo = data_pago[data_pago['periodo'] == periodo]
+
+            resumen = generar_resumen(df_periodo, pago_periodo)
+            resumen["fecha"] = periodo
+            resumenes.append(resumen)
+
+        df_resumenes = pd.concat(resumenes, ignore_index=True)
+        return df_resumenes
+
+    #resumen_diario = calcular_metricas_diarias(filtered_data_2, data_pago)
+    resumen_diario = calcular_metricas_por_periodo(filtered_data_2, data_pago, agrupacion_seleccionada)
+
 
     # Convertir columnas de fecha y asesor en índices para pivotar
     def preparar_chart(df, metrica):
