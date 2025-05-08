@@ -919,14 +919,14 @@ try:
 
 
   
-    st.markdown('<p style="font-weight:bold;">Crecimiento de GESTIÓN por Fechas</p>', unsafe_allow_html=True)
+    #st.markdown('<p style="font-weight:bold;">Crecimiento de GESTIÓN por Fechas</p>', unsafe_allow_html=True)
 
-    col1, col2 = st.columns([1, 1])
-    with col1:
-        st.line_chart(chart_data1)
-    with col2:
+    #col1, col2 = st.columns([1, 1])
+    #with col1:
+     #   st.line_chart(chart_data1)
+    #with col2:
 
-        st.line_chart(chart_data3)
+     #   st.line_chart(chart_data3)
 
 except NameError:
     st.error("Error: 'rango_fechas' no está definido. Verifica que la variable esté correctamente asignada.")
