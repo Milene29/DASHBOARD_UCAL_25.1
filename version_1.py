@@ -605,9 +605,9 @@ try:
     else:
         asesores_a_mostrar = asesores_unicos
     consolidado_dict = {
-    'Métrica': ['Gestiones', 'Contacto', 'Gestion Unicos', 'Contacto Unicos',
+    'Métrica': ['Gestiones','%Contacto Corriente', 'Contacto', 'Gestion Unicos', 'Contacto Unicos','%Contacto',
                 'Valp Unicos (+VLL)', 'Valp Unicos', 'Perdidos Unicos', 'Pagos',
-                '%Contacto Corriente', '%Contacto', '%Valp', '%Perdidos',
+                  '%Valp', '%Perdidos',
                 '%Pago (Paso)', '%Pago (Acum)']
     }
     
@@ -672,8 +672,8 @@ try:
         pago_acum = (pagos / contacto_unicos) * 100 if contacto_unicos > 0 else 0
 
         consolidado_dict[asesor] = [
-            gestion, contacto, gestion_unicos, contacto_unicos, valp_vll, valp,
-            perdidos, pagos, contac_corr, contac_pct, valp_pct, perd_pct,
+            gestion, contac_corr,contacto, gestion_unicos,  contac_pct, contacto_unicos, valp_vll, valp,
+            perdidos, pagos, valp_pct, perd_pct,
             pago_paso, pago_acum
         ]
     df_consolidado = pd.DataFrame(consolidado_dict).set_index('Métrica')
