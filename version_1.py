@@ -885,6 +885,7 @@ try:
 
     # Convertir columnas de fecha y asesor en índices para pivotar
     def preparar_chart(df, metrica):
+        df['fecha'] = pd.to_datetime(df['fecha']).dt.date
         pivot = df.pivot(index="fecha", columns="nombre_asesor", values=metrica).fillna(0)
         return pivot
 
@@ -897,23 +898,43 @@ try:
         # Mostrar charts en dos filas
     st.markdown(f'<h4 style="color:#01579b;font-weight:bold;">Evolutivo de Asesores por fecha</h4>', unsafe_allow_html=True)
         # Primera fila
+        # Selector de vista: Gráfico o Tabla
+    vista = st.radio(
+        "Selecciona la vista:",
+        options=["Gráficos", "Tablas"],
+        horizontal=True
+    )
+    # Primera fila
     col1, col2 = st.columns(2)
     with col1:
-
         st.markdown(f'<h5 style="color:#230443;font-weight:bold;">Leads Gestionados</h5>', unsafe_allow_html=True)
-        st.line_chart(chart1_data)
+        if vista == "Gráficos":
+            st.line_chart(chart1_data)
+        else:
+            st.dataframe(chart1_data.T, use_container_width=True)
+
     with col2:
-        st.markdown(f'<h5 style="color:#230443;font-weight:bold;">%C. efectivo a vp</h5>', unsafe_allow_html=True)
-        st.line_chart(chart2_data)
-    
+        st.markdown(f'<h5 style="color:#230443;font-weight:bold;">%C. efectivo a VP</h5>', unsafe_allow_html=True)
+        if vista == "Gráficos":
+            st.line_chart(chart2_data)
+        else:
+            st.dataframe(chart2_data.T, use_container_width=True)
+
     # Segunda fila
     col3, col4 = st.columns(2)
     with col3:
-        st.markdown(f'<h5 style="color:#230443;font-weight:bold;">%C. efectivo a perdido</h5>', unsafe_allow_html=True)
-        st.line_chart(chart3_data)
+        st.markdown(f'<h5 style="color:#230443;font-weight:bold;">%C. efectivo a Perdido</h5>', unsafe_allow_html=True)
+        if vista == "Gráficos":
+            st.line_chart(chart3_data)
+        else:
+            st.dataframe(chart3_data.T, use_container_width=True)
+
     with col4:
-        st.markdown(f'<h5 style="color:#230443;font-weight:bold;">%Vp a venta</h5>', unsafe_allow_html=True)
-        st.line_chart(chart4_data)
+        st.markdown(f'<h5 style="color:#230443;font-weight:bold;">%VP a Venta</h5>', unsafe_allow_html=True)
+        if vista == "Gráficos":
+            st.line_chart(chart4_data)
+        else:
+            st.dataframe(chart4_data.T, use_container_width=True)
 
 
 
