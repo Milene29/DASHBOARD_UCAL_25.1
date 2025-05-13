@@ -5,8 +5,6 @@ from st_aggrid import AgGrid, GridOptionsBuilder
 import plotly.express as px
 import funciones_generales as fg
 import warnings
-import pytz
-import datetime
 
 st.set_page_config(page_title="Streamlit Dashboard", layout="wide")
 
@@ -818,7 +816,7 @@ try:
 
     for metrica in metricas_porcentaje:
         resumen_transpuesto.loc[metrica] = resumen_transpuesto.loc[metrica].apply(lambda x: f"{x:.0f}%" if x > 0 else "0%")
-
+      
     # Formato entero para métricas absolutas
     metricas_enteras = [
         "LEADS GESTIONADOS",
@@ -874,6 +872,8 @@ try:
 
             resumen = generar_resumen(df_periodo, pago_periodo)
             resumen["fecha"] = periodo
+            #resumen.loc[metrica] = resumen.loc[metrica].apply(lambda x: f"{x:.0f}%" if x > 0 else "0%")
+
             resumenes.append(resumen)
 
         df_resumenes = pd.concat(resumenes, ignore_index=True)
