@@ -72,7 +72,7 @@ else:
             text-align: center; 
             font-weight: bold; 
             margin-bottom: 20px;">
-            Dashboard UCAL 25.2
+            Dashboard UCAL
         </h1>
         """,
         unsafe_allow_html=True
@@ -887,13 +887,19 @@ try:
     def preparar_chart(df, metrica):
         df['fecha'] = pd.to_datetime(df['fecha']).dt.date
         pivot = df.pivot(index="fecha", columns="nombre_asesor", values=metrica).fillna(0)
+        pivot_tabla_porcentaje = pivot.applymap(lambda x: f"{x:.0f}%" if x > 0 else "0%")
+        return pivot,pivot_tabla_porcentaje
+    def preparar_chart_z(df, metrica):
+        df['fecha'] = pd.to_datetime(df['fecha']).dt.date
+        pivot = df.pivot(index="fecha", columns="nombre_asesor", values=metrica).fillna(0)
         return pivot
 
         # Crear los 4 charts
-    chart1_data = preparar_chart(resumen_diario, "LEADS GESTIONADOS")
-    chart2_data = preparar_chart(resumen_diario, "% CONTACTO EFECTIVO A VP")
-    chart3_data = preparar_chart(resumen_diario, "% CONTACTO EFECTIVO A PERDIDO")
-    chart4_data = preparar_chart(resumen_diario, "% VP A VENTA")
+    chart1_data = preparar_chart_z(resumen_diario, "LEADS GESTIONADOS")
+    chart21_data_line,chart21_data_tabla = preparar_chart(resumen_diario, "% LEAD A CONTACTO EFECTIVO")
+    chart2_data_line,chart2_data_tabla = preparar_chart(resumen_diario, "% CONTACTO EFECTIVO A VP")
+    chart3_data_line,chart3_data_tabla = preparar_chart(resumen_diario, "% CONTACTO EFECTIVO A PERDIDO")
+    chart4_data_line,chart4_data_tabla = preparar_chart(resumen_diario, "% VP A VENTA")
     
         # Mostrar charts en dos filas
     st.markdown(f'<h4 style="color:#01579b;font-weight:bold;">Evolutivo de Asesores por fecha</h4>', unsafe_allow_html=True)
@@ -914,28 +920,39 @@ try:
             st.dataframe(chart1_data.T, use_container_width=True)
 
     with col2:
-        st.markdown(f'<h5 style="color:#230443;font-weight:bold;">%C. efectivo a VP</h5>', unsafe_allow_html=True)
+        st.markdown(f'<h5 style="color:#230443;font-weight:bold;">Gestión a C. efectivo</h5>', unsafe_allow_html=True)
         if vista == "Gráficos":
-            st.line_chart(chart2_data)
+            st.line_chart(chart21_data_line)
         else:
-            st.dataframe(chart2_data.T, use_container_width=True)
+            st.dataframe(chart21_data_tabla.T, use_container_width=True)
 
     # Segunda fila
     col3, col4 = st.columns(2)
     with col3:
-        st.markdown(f'<h5 style="color:#230443;font-weight:bold;">%C. efectivo a Perdido</h5>', unsafe_allow_html=True)
+        st.markdown(f'<h5 style="color:#230443;font-weight:bold;">%C. efectivo a VP</h5>', unsafe_allow_html=True)
         if vista == "Gráficos":
-            st.line_chart(chart3_data)
+            st.line_chart(chart2_data_line)
         else:
-            st.dataframe(chart3_data.T, use_container_width=True)
+            st.dataframe(chart2_data_tabla.T, use_container_width=True)
 
     with col4:
+        st.markdown(f'<h5 style="color:#230443;font-weight:bold;">%C. efectivo a Perdido</h5>', unsafe_allow_html=True)
+        if vista == "Gráficos":
+            st.line_chart(chart3_data_line)
+        else:
+            st.dataframe(chart3_data_tabla.T, use_container_width=True)
+    col5, col6 = st.columns(2)
+    
+    
+    with col5:
         st.markdown(f'<h5 style="color:#230443;font-weight:bold;">%VP a Venta</h5>', unsafe_allow_html=True)
         if vista == "Gráficos":
-            st.line_chart(chart4_data)
+            st.line_chart(chart4_data_line)
         else:
-            st.dataframe(chart4_data.T, use_container_width=True)
-
+            st.dataframe(chart4_data_tabla.T, use_container_width=True)
+        
+    with col6:
+        st.write(" ")
 
 
 
