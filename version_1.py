@@ -18,35 +18,22 @@ def load_data():
     file_id='1wLewUXO5ISe2qCDJnTXUf4WdGCA1z8DgP-GO55cUJVI'
     file_id_251='1uML9hmrdOZVQ3Fa1GLDo7XkoWRbZSPgAcKYV1aFd6xs'
     file_id_261='1gVSQQQ1obeIgh6fgsjBD3L2YIG3eU5bizauYnYpzy1Y'
-    archivos_descargados = fg.obtener_archivos_drive(folder_id)
-    data_pago_252=fg.descargar_archivo_drive(file_id)
-    data_pago_251=fg.descargar_archivo_drive(file_id_251)
-    data_pago_261=fg.descargar_archivo_drive(file_id_261)
+    #archivos_descargados = fg.obtener_archivos_drive(folder_id)
+    data_pago_252=pd.read_excel("DATA_VENTA_25.2.xlsx")
+    data_pago_251=pd.read_excel("DATA_VENTA_25.1.xlsx")
+    data_pago_261=pd.read_excel("DATA_VENTA26.1.xlsx")
     df,df_261, data2,data_espejo = None, None,None,None
-    for archivo_name, archivo_content in archivos_descargados:
-        try:    
-            print(f"Procesando archivo: {archivo_name}...")
-            if archivo_name.endswith(f"bbdd_ucal_['2025-2']_conv_(0,1)_pagantes_(0,1)_fecha_{today_string}.xlsx") and df is None:
-                df = pd.read_excel(io.BytesIO(archivo_content), engine='openpyxl')
-                print("Archivo Excel cargado correctamente.")
-            elif  f"bbdd_ucal_['2026-1']" in archivo_name and df_261 is None:
-                df_261 = pd.read_excel(io.BytesIO(archivo_content), engine='openpyxl')
-                print("Archivo Excel 2026.1 cargado correctamente.")
-            elif '2025-2' in archivo_name:
-                data2 = pd.read_csv(io.BytesIO(archivo_content), dtype=str)
-                data2.columns = data2.columns.str.strip().str.replace(' ', '_')
-                print("data actual cargada")
-            elif '2024-2' in archivo_name:
-                data_espejo = pd.read_csv(io.BytesIO(archivo_content), dtype=str)
-                data_espejo.columns = data_espejo.columns.str.strip().str.replace(' ', '_')
-                print("data espejo cargada")
-            
-            elif archivo_content.startswith(b'<!DOCTYPE html>'):
-                print("Error: Se intentó descargar una página en lugar de un CSV")
-        except Exception as e:
-            
-            
-            print(f"Error al procesar {archivo_name}: {e}")
+  
+    df = pd.read_excel("2025-05-27_bbdd_ucal_['2025-2']_conv_(0,1)_pagantes_(0,1)_fecha_250527.xlsx", engine='openpyxl')
+    df_261 = pd.read_excel("2025-05-27_bbdd_ucal_['2026-1']_conv_(0,1)_pagantes_(0,1)_fecha_250527.xlsx", engine='openpyxl')
+    try:
+        data2 = pd.read_csv("250527bbdd_ucal2026-1','2025-2.csv", sep=',', dtype=str)
+        data2.columns = data2.columns.str.strip().str.replace(' ', '_')
+    except Exception as e:
+        st.error(f"Error cargando data2: {e}")
+    data_espejo = pd.read_csv("250527bbdd_ucal2025-1', '2024-2.csv", sep=',', dtype=str)
+    data_espejo.columns = data_espejo.columns.str.strip().str.replace(' ', '_')
+
     return df,df_261, data2,data_espejo,data_pago_252,data_pago_251,data_pago_261
 # Cargar datos
 
