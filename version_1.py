@@ -1,3 +1,6 @@
+
+
+
 import streamlit as st
 import pandas as pd
 import io
@@ -24,14 +27,14 @@ def load_data():
     data_pago_261=pd.read_excel("DATA_VENTA26.1.xlsx")
     df,df_261, data2,data_espejo = None, None,None,None
   
-    df = pd.read_excel("2025-05-27_bbdd_ucal_['2025-2']_conv_(0,1)_pagantes_(0,1)_fecha_250527.xlsx", engine='openpyxl')
-    df_261 = pd.read_excel("2025-05-27_bbdd_ucal_['2026-1']_conv_(0,1)_pagantes_(0,1)_fecha_250527.xlsx", engine='openpyxl')
+    df = pd.read_excel("2025-05-29_bbdd_ucal_['2025-2']_conv_(0,1)_pagantes_(0,1)_fecha_250529.xlsx", engine='openpyxl')
+    df_261 = pd.read_excel("2025-05-29_bbdd_ucal_['2026-1']_conv_(0,1)_pagantes_(0,1)_fecha_250529.xlsx", engine='openpyxl')
     try:
-        data2 = pd.read_csv("250527bbdd_ucal2026-1','2025-2.csv", sep=',', dtype=str)
+        data2 = pd.read_csv("250529bbdd_ucal2026-1','2025-2.csv", sep=',', dtype=str)
         data2.columns = data2.columns.str.strip().str.replace(' ', '_')
     except Exception as e:
         st.error(f"Error cargando data2: {e}")
-    data_espejo = pd.read_csv("250527bbdd_ucal2025-1', '2024-2.csv", sep=',', dtype=str)
+    data_espejo = pd.read_csv("250529bbdd_ucal2025-1', '2024-2.csv", sep=',', dtype=str)
     data_espejo.columns = data_espejo.columns.str.strip().str.replace(' ', '_')
 
     return df,df_261, data2,data_espejo,data_pago_252,data_pago_251,data_pago_261
@@ -969,7 +972,8 @@ filtered_df['prim_tipif_dif_sin_contacto'] =filtered_df['RESPUESTA PRIM TIP DF S
 filtered_df['prim_tipif_dif_sin_contacto_fecha'] =df['FECHA HORA DE PRIM TIP'] 
 filtered_df['fecha_primera_tipif'] =filtered_df['FECHA HORA DE REGISTRO'] 
 filtered_df['fecha_pagante_crm'] =filtered_df['FECHA PAGO'] 
-df_cohort = filtered_df[filtered_df['flg_convocatoria'] == "Convo"].copy()
+
+df_cohort = filtered_df.copy()
 fecha_inicio = pd.to_datetime(rango_fechas[0]).date()
 fecha_fin = pd.to_datetime(rango_fechas[1]).date()
 
