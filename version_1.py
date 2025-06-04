@@ -30,14 +30,14 @@ def load_data():
     data_pago_261=pd.read_excel("DATA_VENTA26.1.xlsx")
     df,df_261, data2,data_espejo = None, None,None,None
   
-    df = pd.read_excel("2025-06-03_bbdd_ucal_['2025-2']_conv_(0,1)_pagantes_(0,1)_fecha_250603.xlsx", engine='openpyxl')
-    df_261 = pd.read_excel("2025-06-03_bbdd_ucal_['2026-1']_conv_(0,1)_pagantes_(0,1)_fecha_250603.xlsx", engine='openpyxl')
+    df = pd.read_excel("2025-06-04_bbdd_ucal_['2025-2']_conv_(0,1)_pagantes_(0,1)_fecha_250604.xlsx", engine='openpyxl')
+    df_261 = pd.read_excel("2025-06-04_bbdd_ucal_['2026-1']_conv_(0,1)_pagantes_(0,1)_fecha_250604.xlsx", engine='openpyxl')
     try:
-        data2 = pd.read_csv("250603bbdd_ucal2026-1','2025-2.csv", sep=',', dtype=str)
+        data2 = pd.read_csv("250604bbdd_ucal2026-1','2025-2.csv", sep=',', dtype=str)
         data2.columns = data2.columns.str.strip().str.replace(' ', '_')
     except Exception as e:
         st.error(f"Error cargando data2: {e}")
-    data_espejo = pd.read_csv("250603bbdd_ucal2025-1', '2024-2.csv", sep=',', dtype=str)
+    data_espejo = pd.read_csv("250604bbdd_ucal2025-1', '2024-2.csv", sep=',', dtype=str)
     data_espejo.columns = data_espejo.columns.str.strip().str.replace(' ', '_')
 
     return df,df_261, data2,data_espejo,data_pago_252,data_pago_251,data_pago_261
