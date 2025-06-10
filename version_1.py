@@ -313,15 +313,21 @@ nombre_mapping_1 = {
     "JOSE RAUL MENDEZ NONAJULCA": "Jose Mendez",
     "JUAN GOMEZ": "Juan Gomez",
     "CÉSAR ALBERTO LOAYZA GUTIÉRREZ": "César Loayza",
-    "LOHANA RIVERA": "Lohana Rivera"
+    "LOHANA RIVERA": "Lohana Rivera",
+    "MERI LUZ RICALDE GONZALES":"Meri Ricalde",
+    "FABIOLA ORTEGA" : "Fabiola Galindo",
+    "ALEJANDRA NAVARRO":"Andrea Crisanto",
+    "JHONATAN ADIEL LOPEZ RODRIGUEZ":"Jhonatan Lopez"
 }
 nombre_mapping_2 = {
     "Andrea Araujo Antara": "Andrea Araujo",
+    "Andrea Crisanto" :"Andrea Crisanto",
     "Ingrid Guillermo Rivera": "Ingrid Guillermo",
     "Juan Pablo Gómez": "Juan Gomez",
     "Cinthia Mariella Orosco": "Cinthia Orosco",
     "Sergio Valderrama Rodriguez": "Sergio Valderrama",
     "Juan Manuel Rodríguez": "Juan Manuel",
+    
 }
 data_pago['Asesor Homologado'] = data_pago['Asesor Homologado'].replace(nombre_mapping_2)
 filtered_df_2['nombre_asesor'] = filtered_df_2['nombre_asesor'].replace(nombre_mapping_1)
@@ -353,6 +359,7 @@ except Exception as e:
 # Agrupar por 'sc_fecha' y contar los 'ID PROMETEO' únicos
 
 asesores_unicos = filtered_df_2[~filtered_df_2['nombre_asesor'].isin(['TI INTEGRADOR','ANGIE AVALOS','ANA JURADO','Rosmery Enriquez','ANGIE JANETH ARIAS FERNANDEZ','Stefano Napuri','Jose Mendez','César Loayza','OMAR GONZALES','Lohana Rivera','YADIRA ALANIA','Juan Gomez','DENISE YANAY'])]['nombre_asesor'].unique()
+asesores_unicos = asesores_unicos[~pd.isna(asesores_unicos)]  # Asegúrate de filtrar NaN aquí
 
 col1,col2=st.columns([1,3])
 with col1:
@@ -594,14 +601,16 @@ try:
         asesores_a_mostrar = asesores_seleccionados
     else:
         asesores_a_mostrar = asesores_unicos
+
+
     consolidado_dict = {
     'Métrica': ['Gestiones','%Contacto Corriente', 'Contacto', 'Gestion Unicos','%Contacto', 'Contacto Unicos','%Valp',
                 'Valp Unicos (+VLL)', 'Valp Unicos', 'Perdidos Unicos', '%Perdidos','Pagos',
                    
                 '%Pago (Paso)', '%Pago (Acum)']
     }
-    
-    
+    print("HOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO")
+    print(asesores_a_mostrar)
     for asesor in asesores_a_mostrar:
         # Filtrar todos los DataFrames por asesor y fecha
         gestion = Leads_gestionados[
@@ -668,6 +677,10 @@ try:
         ]
     df_consolidado = pd.DataFrame(consolidado_dict).set_index('Métrica')
 
+
+
+
+
     # Formatear porcentajes
     for metrica in ['%Contacto Corriente','%Contacto','%Valp','%Perdidos','%Pago (Paso)','%Pago (Acum)']:
         df_consolidado.loc[metrica] = df_consolidado.loc[metrica].apply(lambda x: f"{x:.1f}%" if x > 0 else "0%")
@@ -704,7 +717,7 @@ try:
         if campana_seleccionada == "25.2":
             asesores=["Andrea Araujo","Sergio Valderrama","Angelica Iparraguirre","Rosa Ugarte","Juan Manuel","Fiorella Lanegra"]
         else:
-            asesores=["Cinthia Orosco","Erwin Vital","Daniel Zapata"]
+            asesores=["Cinthia Orosco","Erwin Vital","Daniel Zapata","Meri Ricalde"]
     else:
         if asesores_seleccionados:
             asesores=asesores_seleccionados
