@@ -424,24 +424,34 @@ Leads_contactos = Leads_contactos.reset_index()
 # Renombrar columnas para claridad
 Leads_contactos.columns = ['sc_fecha', 'nombre_asesor', 'unique_id_count']
 
-
 Leads_contactos_unicos = (
     filtered_data2.groupby(['sc_fecha', 'nombre_asesor'])['id_prometeo']
     .nunique()
     .reset_index()
 )
-
-# Renombrar columnas para más claridad
 Leads_contactos_unicos.columns = ['sc_fecha', 'nombre_asesor', 'unique_id_count']
-# Mostrar el resultado
 
-# Filtrar los datos según las condiciones proporcionadas
+filtered_data20= filtered_data[(filtered_data['desc_resultado_1'].isin(["Se inscribio","Registrado a evento","Volver a llamar","Evaluando" ,'Interesado','Se inscribio','Promesa de pago',"Pagante"])) & 
+    (filtered_data['desc_resultado_1'] != 'Sin contacto')  & (filtered_data['nombre_asesor'] != 'TI INTEGRADOR')  ]
+
+Leads_contactos_efectivos = (
+    filtered_data20.groupby(['sc_fecha', 'nombre_asesor'])['id_prometeo']
+    .count()
+)
+Leads_contactos_efectivos = Leads_contactos_efectivos.reset_index()
+# Renombrar columnas para claridad
+Leads_contactos_efectivos.columns = ['sc_fecha', 'nombre_asesor', 'unique_id_count']
+
+
+
+
+
 filtered_data3 = filtered_data[
-    (filtered_data['desc_resultado_1'].isin(["Evaluando" ,'Interesado','Se inscribio','Promesa de pago'])) & 
+    (filtered_data['desc_resultado_1'].isin(["Evaluando" ,'Interesado','Se inscribio','Promesa de pago',"Registrado a evento","Pagante"])) & 
     (filtered_data['desc_resultado_1'] != 'Sin contacto') 
 ]
 filtered_data_vll = filtered_data[
-    (filtered_data['desc_resultado_1'].isin(["Evaluando" ,'Interesado','Se inscribio','Promesa de pago','Volver a llamar'])) & 
+    (filtered_data['desc_resultado_1'].isin(["Evaluando" ,'Interesado','Se inscribio','Promesa de pago','Volver a llamar',"Registrado a evento","Pagante"])) & 
     (filtered_data['desc_resultado_1'] != 'Sin contacto') 
 ]
 # Agrupar por 'sc_fecha' y contar los valores únicos de 'id_prometeo'
@@ -498,6 +508,7 @@ try:
         Leads_valp['sc_fecha'] = pd.to_datetime(Leads_valp['sc_fecha'])
         Leads_valp_vll['sc_fecha'] = pd.to_datetime(Leads_valp_vll['sc_fecha'])
         Leads_perdidos_unicos['sc_fecha'] = pd.to_datetime(Leads_perdidos_unicos['sc_fecha'])
+        Leads_contactos_efectivos['sc_fecha'] = pd.to_datetime(Leads_contactos['sc_fecha'])
         for fecha in Leads_gestion_diaria['sc_fecha']:
             # Obtener los valores correspondientes a cada métrica por fecha
             pagos = Leads_pagos.loc[Leads_pagos['sc_fecha'] == fecha, 'unique_id_count'].sum()
@@ -689,8 +700,7 @@ try:
     st.markdown(f'<h4 style="color:#01579b;font-weight:bold;">Consolidado por Asesor</h4>', unsafe_allow_html=True)
     st.write("Total de tipificaciones únicas en el rango de fecha filtrado. Vista por asesor")
     st.dataframe(df_consolidado, use_container_width=True,height=530)
-    
-    
+
 
     # Título del dashboard
 
@@ -895,12 +905,12 @@ try:
         pivot_tabla_porcentaje = pivot.applymap(lambda x: f"{x:.0f}%" if x > 0 else "0%")
         return pivot,pivot_tabla_porcentaje
     def preparar_chart_z(df, metrica):
-        df['sc_fecha'] = pd.to_datetime(df['sc_fecha']).dt.date
+        df['sc_fecha'] = pd.to_datetime(df['fecha']).dt.date
         pivot = df.pivot(index="sc_fecha", columns="nombre_asesor", values=metrica).fillna(0)
         return pivot
 
         # Crear los 4 charts
-    #chart1_data = preparar_chart_z(resumen_diario, "LEADS GESTIONADOS")
+    chart1_data = preparar_chart_z(resumen_diario, "LEADS GESTIONADOS")
     chart21_data_line,chart21_data_tabla = preparar_chart(resumen_diario, "% LEAD A CONTACTO EFECTIVO")
     chart2_data_line,chart2_data_tabla = preparar_chart(resumen_diario, "% CONTACTO EFECTIVO A VP")
     chart3_data_line,chart3_data_tabla = preparar_chart(resumen_diario, "% CONTACTO EFECTIVO A PERDIDO")
@@ -909,11 +919,38 @@ try:
     print(df_consolidado)
     print(resumen_diario)
     
-    chart1_data_2 = preparar_chart_z(consolidado_dict, "Gestion Unicos")
-    chart21_data_2_line,chart21_data_2_tabla = preparar_chart(df_consolidado, "%Contacto")
-    chart2_data_2_line,chart2_data_2_tabla = preparar_chart(df_consolidado, "%Valp")
-    chart3_data_2_line,chart3_data_2_tabla = preparar_chart(df_consolidado, "%Perdidos")
-    chart4_data_2_line,chart4_data_2_tabla = preparar_chart(df_consolidado, "%Pago (Paso)")
+
+    Leads_pagos = Leads_pagos.rename(columns={'Asesor Homologado': 'nombre_asesor'})
+    def preparar_df(df, nombre_df):
+        df_filtrado = df[
+            (df['sc_fecha'] >= min_fecha) &
+            (df['sc_fecha'] <= max_fecha) &
+            (df['nombre_asesor'].isin(asesores_a_mostrar))
+        ]
+        df_grouped = df_filtrado.groupby(['sc_fecha', 'nombre_asesor'])['unique_id_count'].sum().reset_index()
+        df_pivot = df_grouped.pivot(index='sc_fecha', columns='nombre_asesor', values='unique_id_count').fillna(0)
+        df_pivot = df_pivot.sort_index()
+        return df_pivot
+    df_gestion=preparar_df(Leads_gestionados_unicos, "gestiones")
+    df_contactos_ef = preparar_df(Leads_contactos_efectivos, "contactos_ef")
+    df_valp = preparar_df(Leads_valp, "valp")
+    df_perdidos = preparar_df(Leads_perdidos_unicos, "perdidos")
+    df_pagos = preparar_df(Leads_pagos, "pagos")
+    pct_lead_a_contacto = (df_contactos_ef / df_gestion.where(df_gestion != 0)).fillna(0) * 100
+    pct_contacto_a_vp = (df_valp / df_contactos_ef.where(df_gestion != 0)).fillna(0) * 100
+    pct_contacto_a_perdido = (df_perdidos / df_contactos_ef.where(df_gestion != 0)).fillna(0) * 100
+    pct_vp_a_venta = (df_pagos / df_contactos_ef.where(df_gestion != 0)).fillna(0) * 100
+    print(pct_lead_a_contacto)
+
+            
+        
+    
+    
+    #chart1_data_2 = preparar_chart_z(consolidado_dict, "Gestion Unicos")
+    #chart21_data_2_line,chart21_data_2_tabla = preparar_chart(df_consolidado, "%Contacto")
+    #chart2_data_2_line,chart2_data_2_tabla = preparar_chart(df_consolidado, "%Valp")
+    #chart3_data_2_line,chart3_data_2_tabla = preparar_chart(df_consolidado, "%Perdidos")
+    #chart4_data_2_line,chart4_data_2_tabla = preparar_chart(df_consolidado, "%Pago (Paso)")
     
         # Mostrar charts en dos filas
     st.markdown(f'<h4 style="color:#01579b;font-weight:bold;">Evolutivo de Asesores por fecha</h4>', unsafe_allow_html=True)
@@ -929,25 +966,26 @@ try:
     with col1:
         st.markdown(f'<h5 style="color:#230443;font-weight:bold;">Leads Gestionados</h5>', unsafe_allow_html=True)
         if vista == "Gráficos":
-            st.line_chart(chart1_data_2)
+            #st.line_chart(chart1_data)
+            st.line_chart(df_gestion)
         else:
-            st.dataframe(chart1_data_2.T, use_container_width=True)
+            st.dataframe(df_gestion.T, use_container_width=True)
 
     with col2:
         st.markdown(f'<h5 style="color:#230443;font-weight:bold;">Gestión a C. efectivo</h5>', unsafe_allow_html=True)
         if vista == "Gráficos":
-            st.line_chart(chart21_data_line)
+            st.line_chart(pct_lead_a_contacto)
         else:
-            st.dataframe(chart21_data_tabla.T, use_container_width=True)
+            st.dataframe(pct_lead_a_contacto.T, use_container_width=True)
 
     # Segunda fila
     col3, col4 = st.columns(2)
     with col3:
         st.markdown(f'<h5 style="color:#230443;font-weight:bold;">%C. efectivo a VP</h5>', unsafe_allow_html=True)
         if vista == "Gráficos":
-            st.line_chart(chart2_data_line)
+            st.line_chart(pct_contacto_a_vp)
         else:
-            st.dataframe(chart2_data_tabla.T, use_container_width=True)
+            st.dataframe(pct_contacto_a_vp.T, use_container_width=True)
 
     with col4:
         st.markdown(f'<h5 style="color:#230443;font-weight:bold;">%C. efectivo a Perdido</h5>', unsafe_allow_html=True)
