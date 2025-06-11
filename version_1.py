@@ -30,14 +30,14 @@ def load_data():
     data_pago_261=pd.read_excel("DATA_VENTA26.1.xlsx")
     df,df_261, data2,data_espejo = None, None,None,None
   
-    df = pd.read_excel("2025-06-10_bbdd_ucal_['2025-2']_conv_(0,1)_pagantes_(0,1)_fecha_250610.xlsx", engine='openpyxl')
-    df_261 = pd.read_excel("2025-06-10_bbdd_ucal_['2026-1']_conv_(0,1)_pagantes_(0,1)_fecha_250610.xlsx", engine='openpyxl')
+    df = pd.read_excel("2025-06-11_bbdd_ucal_['2025-2']_conv_(0,1)_pagantes_(0,1)_fecha_250611.xlsx", engine='openpyxl')
+    df_261 = pd.read_excel("2025-06-11_bbdd_ucal_['2026-1']_conv_(0,1)_pagantes_(0,1)_fecha_250611.xlsx", engine='openpyxl')
     try:
-        data2 = pd.read_csv("250610bbdd_ucal2026-1','2025-2.csv", sep=',', dtype=str)
+        data2 = pd.read_csv("250611bbdd_ucal2026-1','2025-2.csv", sep=',', dtype=str)
         data2.columns = data2.columns.str.strip().str.replace(' ', '_')
     except Exception as e:
         st.error(f"Error cargando data2: {e}")
-    data_espejo = pd.read_csv("250610bbdd_ucal2025-1', '2024-2.csv", sep=',', dtype=str)
+    data_espejo = pd.read_csv("250611bbdd_ucal2025-1', '2024-2.csv", sep=',', dtype=str)
     data_espejo.columns = data_espejo.columns.str.strip().str.replace(' ', '_')
 
     return df,df_261, data2,data_espejo,data_pago_252,data_pago_251,data_pago_261
@@ -594,7 +594,8 @@ try:
                 if chart_data_grouped.loc[col, fecha] >= 0:  # Asegurar que el valor no sea 0 antes de formatearlo
                     chart_data_grouped.loc[col, fecha] = "{:.0f}".format(chart_data_grouped.loc[col, fecha])
 
-    st.dataframe(chart_data_grouped, use_container_width=False,height=530)       
+    st.write("Tipificaciones únicas de todos los asesores")
+    st.dataframe(chart_data_grouped, use_container_width=False,height=530,)       
         
         # Filtrar por asesores seleccionados (si hay selección)
     if asesores_seleccionados:  # si estás usando st.multiselect
@@ -609,8 +610,6 @@ try:
                    
                 '%Pago (Paso)', '%Pago (Acum)']
     }
-    print("HOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO")
-    print(asesores_a_mostrar)
     for asesor in asesores_a_mostrar:
         # Filtrar todos los DataFrames por asesor y fecha
         gestion = Leads_gestionados[
@@ -688,7 +687,7 @@ try:
         df_consolidado.loc[metrica] = df_consolidado.loc[metrica].apply(lambda x: f"{int(x)}")
 
     st.markdown(f'<h4 style="color:#01579b;font-weight:bold;">Consolidado por Asesor</h4>', unsafe_allow_html=True)
-    
+    st.write("Total de tipificaciones únicas en el rango de fecha filtrado. Vista por asesor")
     st.dataframe(df_consolidado, use_container_width=True,height=530)
     
     
@@ -887,7 +886,7 @@ try:
 
     #resumen_diario = calcular_metricas_diarias(filtered_data_2, data_pago)
     resumen_diario = calcular_metricas_por_periodo(filtered_data_2, data_pago, agrupacion_seleccionada)
-
+    
 
     # Convertir columnas de fecha y asesor en índices para pivotar
     def preparar_chart(df, metrica):
@@ -896,16 +895,25 @@ try:
         pivot_tabla_porcentaje = pivot.applymap(lambda x: f"{x:.0f}%" if x > 0 else "0%")
         return pivot,pivot_tabla_porcentaje
     def preparar_chart_z(df, metrica):
-        df['fecha'] = pd.to_datetime(df['fecha']).dt.date
-        pivot = df.pivot(index="fecha", columns="nombre_asesor", values=metrica).fillna(0)
+        df['sc_fecha'] = pd.to_datetime(df['sc_fecha']).dt.date
+        pivot = df.pivot(index="sc_fecha", columns="nombre_asesor", values=metrica).fillna(0)
         return pivot
 
         # Crear los 4 charts
-    chart1_data = preparar_chart_z(resumen_diario, "LEADS GESTIONADOS")
+    #chart1_data = preparar_chart_z(resumen_diario, "LEADS GESTIONADOS")
     chart21_data_line,chart21_data_tabla = preparar_chart(resumen_diario, "% LEAD A CONTACTO EFECTIVO")
     chart2_data_line,chart2_data_tabla = preparar_chart(resumen_diario, "% CONTACTO EFECTIVO A VP")
     chart3_data_line,chart3_data_tabla = preparar_chart(resumen_diario, "% CONTACTO EFECTIVO A PERDIDO")
     chart4_data_line,chart4_data_tabla = preparar_chart(resumen_diario, "% VP A VENTA")
+    print("JAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA")
+    print(df_consolidado)
+    print(resumen_diario)
+    
+    chart1_data_2 = preparar_chart_z(consolidado_dict, "Gestion Unicos")
+    chart21_data_2_line,chart21_data_2_tabla = preparar_chart(df_consolidado, "%Contacto")
+    chart2_data_2_line,chart2_data_2_tabla = preparar_chart(df_consolidado, "%Valp")
+    chart3_data_2_line,chart3_data_2_tabla = preparar_chart(df_consolidado, "%Perdidos")
+    chart4_data_2_line,chart4_data_2_tabla = preparar_chart(df_consolidado, "%Pago (Paso)")
     
         # Mostrar charts en dos filas
     st.markdown(f'<h4 style="color:#01579b;font-weight:bold;">Evolutivo de Asesores por fecha</h4>', unsafe_allow_html=True)
@@ -921,9 +929,9 @@ try:
     with col1:
         st.markdown(f'<h5 style="color:#230443;font-weight:bold;">Leads Gestionados</h5>', unsafe_allow_html=True)
         if vista == "Gráficos":
-            st.line_chart(chart1_data)
+            st.line_chart(chart1_data_2)
         else:
-            st.dataframe(chart1_data.T, use_container_width=True)
+            st.dataframe(chart1_data_2.T, use_container_width=True)
 
     with col2:
         st.markdown(f'<h5 style="color:#230443;font-weight:bold;">Gestión a C. efectivo</h5>', unsafe_allow_html=True)
