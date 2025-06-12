@@ -24,7 +24,6 @@ def load_data():
     data_pago_251=pd.read_excel("DATA_VENTA_25.1.xlsx")
     data_pago_261=pd.read_excel("DATA_VENTA26.1.xlsx")
     df,df_261, data2,data_espejo = None, None,None,None
-  
     df = pd.read_excel("2025-06-12_bbdd_ucal_['2025-2']_conv_(0,1)_pagantes_(0,1)_fecha_250612.xlsx", engine='openpyxl')
     df_261 = pd.read_excel("2025-06-12_bbdd_ucal_['2026-1']_conv_(0,1)_pagantes_(0,1)_fecha_250612.xlsx", engine='openpyxl')
     try:
