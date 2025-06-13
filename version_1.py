@@ -60,7 +60,7 @@ else:
             text-align: center; 
             font-weight: bold; 
             margin-bottom: 20px;">
-            Dashboard UCAL
+            Dashboard Gestión
         </h1>
         """,
         unsafe_allow_html=True
@@ -364,7 +364,7 @@ with col2:
     st.write("")
 
             
-st.markdown(f'<h4 style="color:#01579b;font-weight:bold;">Métricas de Gestión - {agrupacion_seleccionada}</h4>', unsafe_allow_html=True)
+st.markdown(f'<h4 style="color:#01579b;font-weight:bold;">Tipificaciones únicas de gestión agrupado por - {agrupacion_seleccionada}</h4>', unsafe_allow_html=True)
 
 
 col1,col2=st.columns([1,3])
@@ -431,7 +431,7 @@ filtered_data20= filtered_data[(filtered_data['desc_resultado_1'].isin(["Se insc
 
 Leads_contactos_efectivos = (
     filtered_data20.groupby(['sc_fecha', 'nombre_asesor'])['id_prometeo']
-    .count()
+    .nunique()
 )
 Leads_contactos_efectivos = Leads_contactos_efectivos.reset_index()
 # Renombrar columnas para claridad
@@ -600,7 +600,9 @@ try:
                 if chart_data_grouped.loc[col, fecha] >= 0:  # Asegurar que el valor no sea 0 antes de formatearlo
                     chart_data_grouped.loc[col, fecha] = "{:.0f}".format(chart_data_grouped.loc[col, fecha])
 
-    st.write("Tipificaciones únicas de todos los asesores")
+    st.write("<i style='color:gray;'>Total de tipificaciones únicas realizadas por todos los asesores en X rango de fecha. La vista se divide por días.</i>",
+    unsafe_allow_html=True
+)
     st.dataframe(chart_data_grouped, use_container_width=False,height=530,)       
         
         # Filtrar por asesores seleccionados (si hay selección)
@@ -692,14 +694,22 @@ try:
     for metrica in ['Gestiones', 'Contacto', 'Gestion Unicos','Contacto Unicos','Valp Unicos (+VLL)','Valp Unicos','Perdidos Unicos','Pagos']:
         df_consolidado.loc[metrica] = df_consolidado.loc[metrica].apply(lambda x: f"{int(x)}")
 
-    st.markdown(f'<h4 style="color:#01579b;font-weight:bold;">Consolidado por Asesor</h4>', unsafe_allow_html=True)
-    st.write("Total de tipificaciones únicas en el rango de fecha filtrado. Vista por asesor")
+    st.markdown(f'<h4 style="color:#01579b;font-weight:bold;">Tipificaciones únicas de gestión agrupadas por Asesor</h4>', unsafe_allow_html=True)
+    st.markdown(
+    "<i style='color:gray;'>Total de tipificaciones únicas en el rango de fecha filtrado realizados por X asesores. La vista se agrupa por asesor</i>",
+    unsafe_allow_html=True
+)
+
     st.dataframe(df_consolidado, use_container_width=True,height=530)
 
 
     # Título del dashboard
 
-    st.markdown(f'<h4 style="color:#01579b;font-weight:bold;">Gestión último Status por Asesor</h4>', unsafe_allow_html=True)
+    st.markdown(f'<h4 style="color:#01579b;font-weight:bold;">Último Status de gestión agrupago por Asesor</h4>', unsafe_allow_html=True)
+    st.markdown(
+    "<i style='color:gray;'>Último Status que tuvo el lead con X asesor. Se observa la última tipificación que tuvo el lead en el rango de fecha filtrado con X Asesor</i>",
+    unsafe_allow_html=True
+)
     columa1, columa2 = st.columns([1, 1])   
     with columa1:
         opcion_filtro = st.radio(
@@ -732,9 +742,14 @@ try:
         no_efectivos = {"Sin contacto", 1, 2, 3, 4, None}
     else:
         no_efectivos = {"Sin contacto", 1, 2, 3, 4, None,"Volver a llamar"}
-            
+    print(Leads_pagos)
     filtered_data_2= filtered_data[filtered_data['nombre_asesor'].isin(asesores)]
     Leads_pagos= Leads_pagos[Leads_pagos['nombre_asesor'].isin(asesores)]
+    Leads_gestionados_unicos=Leads_gestionados_unicos[Leads_gestionados_unicos["nombre_asesor"].isin(asesores)]
+    Leads_contactos_efectivos=Leads_contactos_efectivos[Leads_contactos_efectivos["nombre_asesor"].isin(asesores)]
+    Leads_valp=Leads_valp[Leads_valp["nombre_asesor"].isin(asesores)]
+    Leads_perdidos_unicos=Leads_perdidos_unicos[Leads_perdidos_unicos["nombre_asesor"].isin(asesores)]
+    Leads_pagos=Leads_pagos[Leads_pagos["nombre_asesor"].isin(asesores)]
  
     print(filtered_data_2.columns)
 
@@ -911,9 +926,7 @@ try:
     chart3_data_line,chart3_data_tabla = preparar_chart(resumen_diario, "% CONTACTO EFECTIVO A PERDIDO")
     chart4_data_line,chart4_data_tabla = preparar_chart(resumen_diario, "% VP A VENTA")
     print("JAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA")
-    print(df_consolidado)
-    print(resumen_diario)
-    
+
 
     Leads_pagos = Leads_pagos.rename(columns={'Asesor Homologado': 'nombre_asesor'})
     def preparar_df(df, nombre_df):
@@ -926,6 +939,7 @@ try:
         df_pivot = df_grouped.pivot(index='sc_fecha', columns='nombre_asesor', values='unique_id_count').fillna(0)
         df_pivot = df_pivot.sort_index()
         return df_pivot
+
     df_gestion=preparar_df(Leads_gestionados_unicos, "gestiones")
     df_contactos_ef = preparar_df(Leads_contactos_efectivos, "contactos_ef")
     df_valp = preparar_df(Leads_valp, "valp")
@@ -948,7 +962,7 @@ try:
     #chart4_data_2_line,chart4_data_2_tabla = preparar_chart(df_consolidado, "%Pago (Paso)")
     
         # Mostrar charts en dos filas
-    st.markdown(f'<h4 style="color:#01579b;font-weight:bold;">Evolutivo de Asesores por fecha</h4>', unsafe_allow_html=True)
+    st.markdown(f'<h4 style="color:#01579b;font-weight:bold;">Evolutivo de métricas realizadas por Asesores en el rango de fecha</h4>', unsafe_allow_html=True)
         # Primera fila
         # Selector de vista: Gráfico o Tabla
     vista = st.radio(
